@@ -1,0 +1,22 @@
+{
+  "name": "@janus/validation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "4.0.17"
+  },
+  "devDependencies": {
+    "@types/node": "24.2.1",
+    "vitest": "3.2.4"
+  }
+}
