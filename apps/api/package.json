@@ -1,0 +1,47 @@
+{
+  "name": "@janus/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx watch src/main.ts",
+    "lint": "eslint src test",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@janus/auth-core": "workspace:*",
+    "@janus/config": "workspace:*",
+    "@janus/contracts": "workspace:*",
+    "@janus/database": "workspace:*",
+    "@janus/logger": "workspace:*",
+    "@janus/queue": "workspace:*",
+    "@janus/storage": "workspace:*",
+    "@janus/validation": "workspace:*",
+    "@nestjs/common": "11.1.6",
+    "@nestjs/core": "11.1.6",
+    "@nestjs/platform-express": "11.1.6",
+    "@nestjs/swagger": "11.2.0",
+    "@prisma/client": "6.14.0",
+    "argon2": "0.44.0",
+    "cookie-parser": "1.4.7",
+    "ioredis": "5.7.0",
+    "jose": "6.0.13",
+    "nodemailer": "7.0.5",
+    "pino": "9.9.0",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "zod": "4.0.17"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "1.4.9",
+    "@types/express": "5.0.3",
+    "@types/node": "24.2.1",
+    "@types/nodemailer": "7.0.0",
+    "supertest": "7.1.4",
+    "tsup": "8.5.0",
+    "tsx": "4.20.4",
+    "vitest": "3.2.4"
+  }
+}

@@ -1,0 +1,46 @@
+export class ApplicationError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = 'ApplicationError';
+  }
+}
+
+export const errors = {
+  conflict: (message = 'An account with those details already exists.') =>
+    new ApplicationError('ACCOUNT_CONFLICT', message, 409),
+  invalidVerification: () =>
+    new ApplicationError(
+      'VERIFICATION_INVALID',
+      'The verification code is invalid or expired.',
+      400,
+    ),
+  verificationAttempts: () =>
+    new ApplicationError(
+      'VERIFICATION_ATTEMPTS_EXCEEDED',
+      'The verification code can no longer be used. Request a new code.',
+      429,
+    ),
+  invalidCredentials: () =>
+    new ApplicationError('AUTHENTICATION_FAILED', 'The supplied credentials are invalid.', 401),
+  emailNotVerified: () =>
+    new ApplicationError('EMAIL_NOT_VERIFIED', 'Verify your email before signing in.', 403),
+  accountUnavailable: () =>
+    new ApplicationError('ACCOUNT_UNAVAILABLE', 'This account is not available.', 403),
+  invalidSession: () =>
+    new ApplicationError('SESSION_INVALID', 'The session is invalid or expired.', 401),
+  invalidReset: () =>
+    new ApplicationError('PASSWORD_RESET_INVALID', 'The reset link is invalid or expired.', 400),
+  rateLimited: (retryAfterSeconds: number) =>
+    new ApplicationError(
+      'RATE_LIMITED',
+      `Too many requests. Try again in ${retryAfterSeconds} seconds.`,
+      429,
+    ),
+  unauthorized: () => new ApplicationError('UNAUTHORIZED', 'Authentication is required.', 401),
+  serviceUnavailable: () =>
+    new ApplicationError('DEPENDENCY_UNAVAILABLE', 'A required service is unavailable.', 503),
+};
