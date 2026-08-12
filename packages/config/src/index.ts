@@ -25,6 +25,7 @@ const environmentSchema = z.object({
   SMTP_FROM: z.string().min(3),
   JWT_ACCESS_SECRET: z.string().min(32),
   TOKEN_HASH_SECRET: z.string().min(32),
+  BUILD_SIGNING_PRIVATE_KEY: z.string().min(40),
   ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
   REFRESH_TOKEN_TTL_SECONDS: z.coerce.number().int().min(3600).default(2_592_000),
   EMAIL_VERIFICATION_TTL_SECONDS: z.coerce.number().int().min(300).default(900),

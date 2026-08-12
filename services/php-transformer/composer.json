@@ -1,0 +1,13 @@
+{
+  "name": "janus/php-transformer",
+  "description": "AST analysis and compatibility-first PHP source transformation for Janus Protect",
+  "license": "proprietary",
+  "type": "project",
+  "require": {
+    "php": ">=8.2",
+    "nikic/php-parser": "^5.6"
+  },
+  "config": {
+    "sort-packages": true
+  }
+}

@@ -12,6 +12,7 @@ const validEnvironment = {
   SMTP_FROM: 'no-reply@example.com',
   JWT_ACCESS_SECRET: 'a'.repeat(32),
   TOKEN_HASH_SECRET: 'b'.repeat(32),
+  BUILD_SIGNING_PRIVATE_KEY: 'c'.repeat(48),
 };
 
 afterEach(() => resetConfigForTests());
