@@ -62,6 +62,11 @@ enum BuildArtifactKind {
   BUILD_REPORT
 }
 
+enum LicenseStatus {
+  ACTIVE
+  REVOKED
+}
+
 model User {
   id              String      @id @default(uuid()) @db.Uuid
   email           String      @unique @db.VarChar(254)
@@ -186,9 +191,44 @@ model Project {
   sources         ProjectSource[]
   protection      ProtectionProfile?
   builds          Build[]
+  licenses        License[]
 
   @@unique([organizationId, slug])
   @@index([organizationId, status, createdAt])
+}
+
+model License {
+  id             String        @id @default(uuid()) @db.Uuid
+  projectId      String        @db.Uuid
+  keyHash        String        @unique @db.Char(64)
+  keyPrefix      String        @db.VarChar(16)
+  customerEmail  String?       @db.VarChar(254)
+  maxActivations Int           @default(1)
+  status         LicenseStatus @default(ACTIVE)
+  expiresAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activations LicenseActivation[]
+
+  @@index([projectId, status, createdAt])
+}
+
+model LicenseActivation {
+  id              String    @id @default(uuid()) @db.Uuid
+  licenseId       String    @db.Uuid
+  siteUrl         String    @db.VarChar(512)
+  siteHash        String    @db.Char(64)
+  tokenHash       String    @unique @db.Char(64)
+  activatedAt     DateTime  @default(now())
+  lastValidatedAt DateTime  @default(now())
+  deactivatedAt   DateTime?
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@unique([licenseId, siteHash])
+  @@index([licenseId, deactivatedAt])
 }
 
 model ProjectSource {

@@ -40,6 +40,6 @@ import { AuthController } from './presentation/auth.controller';
     },
     { provide: 'CLOCK', useValue: systemClock },
   ],
-  exports: [AccessTokenGuard, ACCESS_TOKEN_SERVICE],
+  exports: [AccessTokenGuard, ACCESS_TOKEN_SERVICE, RATE_LIMITER],
 })
 export class AuthModule {}

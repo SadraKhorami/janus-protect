@@ -77,6 +77,9 @@ describe('BasicProtectionEngine', () => {
     const signingPrivateKey = privateKey
       .export({ format: 'der', type: 'pkcs8' })
       .toString('base64');
+    const licensingPublicKey = createPublicKey(privateKey)
+      .export({ format: 'der', type: 'spki' })
+      .toString('base64');
     const result = await new BasicProtectionEngine().protect({
       ...source,
       level: ProtectionLevel.STRONG,
@@ -85,6 +88,12 @@ describe('BasicProtectionEngine', () => {
       runtimeInjection: true,
       integrity: true,
       obfuscation: true,
+      licensing: {
+        apiUrl: 'https://licenses.example.com/api/v1',
+        projectId: 'f231f93e-80fa-4821-96ba-cd5ffcab283e',
+        projectType: ProjectType.PLUGIN,
+        publicKey: licensingPublicKey,
+      },
       transformPhp: (files) =>
         Promise.resolve({ files, report: { parser: 'test-double', valid: true } }),
     });
@@ -92,12 +101,17 @@ describe('BasicProtectionEngine', () => {
     const byPath = new Map(output.files.map((file) => [file.path, file.data]));
     const entry = byPath.get('sample/sample.php')?.toString('utf8') ?? '';
     const runtime = byPath.get('sample/janus-protect/runtime.php')?.toString('utf8') ?? '';
+    const licensing = byPath.get('sample/janus-protect/license.php')?.toString('utf8') ?? '';
     const manifest = byPath.get('sample/janus-protect/integrity-manifest.json');
     const signatureFile = byPath.get('sample/janus-protect/integrity-signature.json');
 
     expect(entry).toContain('Version: 1.2.3');
     expect(entry).toContain("require_once __DIR__ . '/janus-protect/runtime.php';");
+    expect(entry).toContain("require_once __DIR__ . '/janus-protect/license.php';");
     expect(runtime).toContain("do_action('janus_protect_integrity_failed'");
+    expect(licensing).toContain("add_options_page(__('License'");
+    expect(licensing).toContain('wordpress-sdk/0.4');
+    expect(licensing).toContain("do_action('janus_protect_license_invalid'");
     expect(manifest).toBeDefined();
     expect(signatureFile).toBeDefined();
 

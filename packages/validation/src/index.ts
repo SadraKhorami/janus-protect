@@ -85,6 +85,26 @@ export const createBuildSchema = z
   })
   .strict();
 
+const siteUrl = z.string().trim().url().max(512);
+export const createLicenseSchema = z
+  .object({
+    customerEmail: email.optional(),
+    maxActivations: z.number().int().min(1).max(100).default(1),
+    expiresAt: z.string().datetime().nullable().optional(),
+  })
+  .strict()
+  .refine((value) => !value.expiresAt || new Date(value.expiresAt).getTime() > Date.now(), {
+    message: 'License expiry must be in the future.',
+    path: ['expiresAt'],
+  });
+export const activateLicenseSchema = z
+  .object({ projectId: z.string().uuid(), key: z.string().trim().min(20).max(100), siteUrl })
+  .strict();
+export const validateLicenseSchema = z
+  .object({ projectId: z.string().uuid(), activationToken: z.string().min(32).max(200), siteUrl })
+  .strict();
+export const deactivateLicenseSchema = validateLicenseSchema;
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
@@ -95,3 +115,6 @@ export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 export type ProtectionProfileInput = z.infer<typeof protectionProfileSchema>;
 export type CreateBuildInput = z.infer<typeof createBuildSchema>;
+export type CreateLicenseInput = z.infer<typeof createLicenseSchema>;
+export type ActivateLicenseInput = z.infer<typeof activateLicenseSchema>;
+export type ValidateLicenseInput = z.infer<typeof validateLicenseSchema>;

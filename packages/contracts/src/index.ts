@@ -156,3 +156,29 @@ export type Build = {
   startedAt: string | null;
   completedAt: string | null;
 };
+
+export type License = {
+  id: string;
+  projectId: string;
+  keyPrefix: string;
+  customerEmail: string | null;
+  maxActivations: number;
+  activeActivations: number;
+  status: 'ACTIVE' | 'REVOKED';
+  expiresAt: string | null;
+  createdAt: string;
+};
+
+export type IssuedLicense = License & { key: string };
+
+export type LicenseLease = {
+  payload: string;
+  signature: string;
+};
+
+export type LicenseActivationResult = {
+  valid: true;
+  activationToken: string;
+  lease: LicenseLease;
+  expiresAt: string | null;
+};

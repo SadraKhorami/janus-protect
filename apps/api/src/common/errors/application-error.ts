@@ -51,6 +51,10 @@ export const errors = {
     new ApplicationError('PROJECT_SOURCE_REQUIRED', 'Upload project source before building.', 409),
   buildConflict: () =>
     new ApplicationError('BUILD_VERSION_CONFLICT', 'This project version already exists.', 409),
+  licenseInvalid: () =>
+    new ApplicationError('LICENSE_INVALID', 'The license is invalid, expired, or revoked.', 403),
+  activationLimit: () =>
+    new ApplicationError('LICENSE_ACTIVATION_LIMIT', 'The activation limit has been reached.', 409),
   serviceUnavailable: () =>
     new ApplicationError('DEPENDENCY_UNAVAILABLE', 'A required service is unavailable.', 503),
 };

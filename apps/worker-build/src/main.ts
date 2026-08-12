@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createPrivateKey, createPublicKey } from 'node:crypto';
 import { resolve } from 'node:path';
 import { getConfig } from '@janus/config';
 import { BuildArtifactKind, BuildStatus, ProtectionLevel } from '@janus/contracts';
@@ -65,6 +66,12 @@ async function processBuild(job: Job<{ buildId: string }>, database: PrismaClien
       runtimeInjection: build.runtimeInjection,
       integrity: build.integrity,
       obfuscation: build.obfuscation,
+      licensing: {
+        apiUrl: config.LICENSE_API_URL,
+        projectId: build.projectId,
+        projectType: inspected.analysis.type,
+        publicKey: licensingPublicKey(config.BUILD_SIGNING_PRIVATE_KEY),
+      },
       transformPhp: (files) =>
         transformPhp(files, inspected.analysis.rootDirectory, true, build.excludePaths),
     });
@@ -237,6 +244,15 @@ function mapLevel(level: string): ProtectionLevel {
   if (level === 'STANDARD') return ProtectionLevel.STANDARD;
   if (level === 'STRONG') return ProtectionLevel.STRONG;
   return ProtectionLevel.BASIC;
+}
+
+function licensingPublicKey(privateKeyBase64: string): string {
+  const privateKey = createPrivateKey({
+    key: Buffer.from(privateKeyBase64, 'base64'),
+    format: 'der',
+    type: 'pkcs8',
+  });
+  return createPublicKey(privateKey).export({ format: 'der', type: 'spki' }).toString('base64');
 }
 
 async function shutdown(): Promise<void> {

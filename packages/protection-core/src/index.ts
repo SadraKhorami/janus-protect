@@ -41,6 +41,12 @@ export type ProtectionInput = {
   runtimeInjection: boolean;
   integrity: boolean;
   obfuscation: boolean;
+  licensing?: {
+    apiUrl: string;
+    projectId: string;
+    projectType: ProjectType;
+    publicKey: string;
+  };
   transformPhp: (files: ArchiveFile[]) => Promise<{
     files: ArchiveFile[];
     report: Record<string, unknown>;
@@ -177,15 +183,23 @@ export class BasicProtectionEngine implements ProtectionEngine {
     const runtimePath = `${input.analysis.rootDirectory}/janus-protect/runtime.php`;
     const manifestPath = `${input.analysis.rootDirectory}/janus-protect/integrity-manifest.json`;
     const signaturePath = `${input.analysis.rootDirectory}/janus-protect/integrity-signature.json`;
+    const licensePath = `${input.analysis.rootDirectory}/janus-protect/license.php`;
 
     updateWordPressVersion(files, input.analysis, input.version);
     if (input.runtimeInjection) {
-      injectRuntimeBootstrap(files, input.analysis.entryFile);
+      injectRuntimeBootstrap(files, input.analysis.entryFile, Boolean(input.licensing));
       files.push({
         path: runtimePath,
         data: Buffer.from(runtimeSource(input.version), 'utf8'),
         mode: 0o100644,
       });
+      if (input.licensing) {
+        files.push({
+          path: licensePath,
+          data: Buffer.from(licenseSource(input.licensing), 'utf8'),
+          mode: 0o100644,
+        });
+      }
     }
 
     const manifestFiles = Object.fromEntries(
@@ -239,6 +253,7 @@ export class BasicProtectionEngine implements ProtectionEngine {
       runtimeInjectedAt: input.runtimeInjection ? input.analysis.entryFile : null,
       integrityFiles: Object.keys(manifestFiles).length,
       signatureAlgorithm: input.integrity ? 'Ed25519' : null,
+      licensingSdkInjected: Boolean(input.licensing),
     };
     const analysisReport = { ...input.analysis };
     const buildReport = {
@@ -411,13 +426,15 @@ function detectWordPressEntry(
   );
 }
 
-function injectRuntimeBootstrap(files: ArchiveFile[], entryPath: string): void {
+function injectRuntimeBootstrap(files: ArchiveFile[], entryPath: string, licensing = false): void {
   const entry = files.find((file) => file.path === entryPath);
   if (!entry) throw new Error('WordPress entry file is missing.');
   const source = entry.data.toString('utf8');
   const marker = "require_once __DIR__ . '/janus-protect/runtime.php';";
-  if (source.includes(marker)) return;
-  const transformed = source.replace(/<\?php\s*/, (opening) => `${opening}\n${marker}\n`);
+  const licenseMarker = "require_once __DIR__ . '/janus-protect/license.php';";
+  if (source.includes(marker) && (!licensing || source.includes(licenseMarker))) return;
+  const bootstrap = licensing ? `${marker}\n${licenseMarker}` : marker;
+  const transformed = source.replace(/<\?php\s*/, (opening) => `${opening}\n${bootstrap}\n`);
   if (transformed === source) throw new Error('WordPress entry file does not begin with PHP.');
   entry.data = Buffer.from(transformed, 'utf8');
 }
@@ -441,6 +458,84 @@ function updateWordPressVersion(
 
 function runtimeSource(version: string): string {
   return `<?php\n/** Janus Protect compatibility-first runtime. */\nif (!defined('ABSPATH')) { return; }\n(function (): void {\n    $verify = static function (): bool {\n        $base = dirname(__DIR__);\n        $manifestPath = __DIR__ . '/integrity-manifest.json';\n        $signaturePath = __DIR__ . '/integrity-signature.json';\n        if (!is_readable($manifestPath) || !is_readable($signaturePath)) { return false; }\n        if (!function_exists('sodium_crypto_sign_verify_detached')) { return false; }\n        $manifestRaw = file_get_contents($manifestPath);\n        $signatureData = json_decode((string) file_get_contents($signaturePath), true);\n        if (!is_string($manifestRaw) || !is_array($signatureData)) { return false; }\n        $signature = base64_decode((string) ($signatureData['signature'] ?? ''), true);\n        $spki = base64_decode((string) ($signatureData['publicKey'] ?? ''), true);\n        if (!is_string($signature) || !is_string($spki) || strlen($spki) < 32) { return false; }\n        $rawPublicKey = substr($spki, -32);\n        if (!sodium_crypto_sign_verify_detached($signature, $manifestRaw, $rawPublicKey)) { return false; }\n        $manifest = json_decode($manifestRaw, true);\n        if (!is_array($manifest) || !isset($manifest['files']) || !is_array($manifest['files'])) { return false; }\n        foreach ($manifest['files'] as $relative => $expected) {\n            $path = $base . '/' . ltrim((string) $relative, '/');\n            if (!is_file($path)) { return false; }\n            $actual = hash_file('sha256', $path);\n            if (!is_string($actual) || !hash_equals((string) $expected, $actual)) { return false; }\n        }\n        return true;\n    };\n    $check = static function () use ($verify): void {\n        $cacheKey = 'janus_protect_' . substr(hash('sha256', __DIR__), 0, 16);\n        if (function_exists('get_transient') && get_transient($cacheKey) === 'ok') { return; }\n        $valid = $verify();\n        if (function_exists('set_transient')) {\n            set_transient($cacheKey, $valid ? 'ok' : 'failed', 10 * MINUTE_IN_SECONDS);\n        }\n        if (!$valid && function_exists('do_action')) {\n            do_action('janus_protect_integrity_failed', __DIR__, '${version}');\n        }\n    };\n    if (function_exists('add_action')) { add_action('admin_init', $check, 1); }\n})();\n`;
+}
+
+function licenseSource(config: NonNullable<ProtectionInput['licensing']>): string {
+  const encoded = Buffer.from(JSON.stringify(config)).toString('base64');
+  return `<?php
+/** Janus Protect licensing SDK. */
+if (!defined('ABSPATH')) { return; }
+(function (): void {
+    $config = json_decode((string) base64_decode('${encoded}', true), true);
+    if (!is_array($config)) { return; }
+    $suffix = substr(hash('sha256', (string) $config['projectId']), 0, 12);
+    $option = 'janus_license_' . $suffix;
+    $page = 'janus-license-' . $suffix;
+    $postAction = 'janus_license_action_' . $suffix;
+    $cronAction = 'janus_license_check_' . $suffix;
+    $site = static function (): string {
+        $parts = wp_parse_url(home_url('/'));
+        return strtolower(rtrim((string) ($parts['host'] ?? ''), '.')) . (isset($parts['port']) ? ':' . (int) $parts['port'] : '');
+    };
+    $verify = static function (array $lease) use ($config, $site): bool {
+        if (!function_exists('sodium_crypto_sign_verify_detached')) { return false; }
+        $value = (string) ($lease['payload'] ?? '');
+        $payload = base64_decode(strtr($value, '-_', '+/') . str_repeat('=', (4 - strlen($value) % 4) % 4), true);
+        $signature = base64_decode((string) ($lease['signature'] ?? ''), true);
+        $publicKey = base64_decode((string) $config['publicKey'], true);
+        if (!is_string($payload) || !is_string($signature) || !is_string($publicKey) || strlen($publicKey) < 32 || !sodium_crypto_sign_verify_detached($signature, $payload, substr($publicKey, -32))) { return false; }
+        $claims = json_decode($payload, true);
+        return is_array($claims) && hash_equals((string) $config['projectId'], (string) ($claims['projectId'] ?? '')) && hash_equals($site(), (string) ($claims['site'] ?? '')) && (int) ($claims['exp'] ?? 0) >= time();
+    };
+    $request = static function (string $endpoint, array $body) use ($config): array {
+        $response = wp_remote_post(rtrim((string) $config['apiUrl'], '/') . '/licenses/' . $endpoint, ['timeout' => 10, 'sslverify' => true, 'headers' => ['Content-Type' => 'application/json', 'Accept' => 'application/json', 'X-Janus-Client' => 'wordpress-sdk/0.4'], 'body' => wp_json_encode($body)]);
+        if (is_wp_error($response)) { return ['ok' => false, 'error' => $response->get_error_message()]; }
+        $data = json_decode((string) wp_remote_retrieve_body($response), true);
+        return wp_remote_retrieve_response_code($response) === 200 && is_array($data) ? ['ok' => true, 'data' => $data] : ['ok' => false, 'error' => (string) ($data['error']['message'] ?? __('License request failed.', 'janus-protect'))];
+    };
+    $isValid = static function () use ($option, $verify): bool {
+        $saved = get_option($option, []);
+        return is_array($saved) && isset($saved['lease']) && is_array($saved['lease']) && $verify($saved['lease']);
+    };
+    add_filter('janus_protect_license_valid', static function (bool $valid, string $projectId = '') use ($config, $isValid): bool { return $projectId === (string) $config['projectId'] ? $isValid() : $valid; }, 10, 2);
+    add_action('admin_post_' . $postAction, static function () use ($config, $option, $page, $request): void {
+        if (!current_user_can('manage_options')) { wp_die(esc_html__('Permission denied.', 'janus-protect')); }
+        check_admin_referer($page);
+        $saved = get_option($option, []);
+        $command = sanitize_key((string) ($_POST['janus_command'] ?? ''));
+        if ($command === 'deactivate' && is_array($saved) && !empty($saved['activationToken'])) {
+            $request('deactivate', ['projectId' => $config['projectId'], 'activationToken' => $saved['activationToken'], 'siteUrl' => home_url('/')]); delete_option($option);
+        } elseif ($command === 'activate') {
+            $key = sanitize_text_field(wp_unslash((string) ($_POST['license_key'] ?? '')));
+            $result = $request('activate', ['projectId' => $config['projectId'], 'key' => $key, 'siteUrl' => home_url('/')]);
+            if ($result['ok']) { update_option($option, ['activationToken' => $result['data']['activationToken'], 'lease' => $result['data']['lease'], 'maskedKey' => substr($key, 0, 12) . '…', 'checkedAt' => time(), 'error' => ''], false); }
+            else { update_option($option, array_merge(is_array($saved) ? $saved : [], ['error' => $result['error']]), false); }
+        }
+        wp_safe_redirect(admin_url(($config['projectType'] === 'THEME' ? 'themes.php' : 'options-general.php') . '?page=' . $page)); exit;
+    });
+    add_action($cronAction, static function () use ($config, $option, $request): void {
+        $saved = get_option($option, []); if (!is_array($saved) || empty($saved['activationToken'])) { return; }
+        $result = $request('validate', ['projectId' => $config['projectId'], 'activationToken' => $saved['activationToken'], 'siteUrl' => home_url('/')]);
+        if ($result['ok']) { $saved['lease'] = $result['data']['lease']; $saved['checkedAt'] = time(); $saved['error'] = ''; update_option($option, $saved, false); }
+    });
+    add_action('init', static function () use ($config, $cronAction, $isValid): void {
+        if (!wp_next_scheduled($cronAction)) { wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', $cronAction); }
+        if (!$isValid()) { do_action('janus_protect_license_invalid', (string) $config['projectId']); }
+    });
+    add_action('admin_menu', static function () use ($config, $option, $page, $postAction, $isValid): void {
+        $render = static function () use ($option, $page, $postAction, $isValid): void {
+            $saved = get_option($option, []); $valid = $isValid();
+            echo '<div class="wrap"><h1>' . esc_html__('Janus License', 'janus-protect') . '</h1><p><strong>' . esc_html__('Status:', 'janus-protect') . '</strong> ' . ($valid ? '<span style="color:#16803a">' . esc_html__('Active', 'janus-protect') . '</span>' : '<span style="color:#b42318">' . esc_html__('Inactive or offline lease expired', 'janus-protect') . '</span>') . '</p>';
+            if (is_array($saved) && !empty($saved['error'])) { echo '<div class="notice notice-error"><p>' . esc_html((string) $saved['error']) . '</p></div>'; }
+            echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="' . esc_attr($postAction) . '">'; wp_nonce_field($page);
+            if (!empty($saved['activationToken'])) { echo '<p>' . esc_html((string) ($saved['maskedKey'] ?? '')) . '</p><input type="hidden" name="janus_command" value="deactivate"><button class="button">' . esc_html__('Deactivate license', 'janus-protect') . '</button>'; }
+            else { echo '<input class="regular-text" required name="license_key" autocomplete="off" placeholder="JP-XXXXXX-XXXXXX-XXXXXX"><input type="hidden" name="janus_command" value="activate"> <button class="button button-primary">' . esc_html__('Activate license', 'janus-protect') . '</button>'; }
+            echo '</form></div>';
+        };
+        if ($config['projectType'] === 'THEME') { add_theme_page(__('License', 'janus-protect'), __('License', 'janus-protect'), 'manage_options', $page, $render); } else { add_options_page(__('License', 'janus-protect'), __('License', 'janus-protect'), 'manage_options', $page, $render); }
+    });
+})();
+`;
 }
 
 function relativeToRoot(filePath: string, root: string): string {
