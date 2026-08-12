@@ -1,5 +1,14 @@
-import type { Account, ApiErrorBody, AuthResponse, MessageResponse } from '@janus/contracts';
 import type {
+  Account,
+  ApiErrorBody,
+  AuthResponse,
+  IssuedLicense,
+  License,
+  MessageResponse,
+  Project,
+} from '@janus/contracts';
+import type {
+  CreateLicenseInput,
   ForgotPasswordInput,
   LoginInput,
   RegisterInput,
@@ -74,6 +83,22 @@ class ApiClient {
 
   async resetPassword(input: ResetPasswordInput): Promise<MessageResponse> {
     return this.request('/auth/reset-password', { method: 'POST', body: input }, false);
+  }
+
+  async projects(): Promise<Project[]> {
+    return this.request('/projects', { method: 'GET' });
+  }
+
+  async licenses(projectId: string): Promise<License[]> {
+    return this.request(`/projects/${projectId}/licenses`, { method: 'GET' });
+  }
+
+  async createLicense(projectId: string, input: CreateLicenseInput): Promise<IssuedLicense> {
+    return this.request(`/projects/${projectId}/licenses`, { method: 'POST', body: input });
+  }
+
+  async revokeLicense(projectId: string, licenseId: string): Promise<License> {
+    return this.request(`/projects/${projectId}/licenses/${licenseId}/revoke`, { method: 'POST' });
   }
 
   private setAccessToken(token: string | null): void {
