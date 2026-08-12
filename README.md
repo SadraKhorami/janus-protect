@@ -21,7 +21,9 @@ The web app is available at `http://localhost:3000`, the API documentation at
 The default development login is `admin@khorami.dev` with password `JanusProtect123!`. The seed is
 idempotent and refuses to run when `NODE_ENV=production`.
 
-Production code changes require a root semantic-version bump. Install the repository pre-push
-guard with `pnpm hooks:install`; pull requests are checked by the same rule in CI.
+## Roadmap
 
-Run `pnpm check` before submitting changes.
+- Version `0.3.0`: strengthen the protection engine with real, compatibility-first PHP
+  obfuscation and hardened isolated builds.
+- Version `0.4.0`: add complete plugin and theme licensing, including license keys, activation
+  limits, domain binding, signed offline leases, and the WordPress License SDK.
