@@ -1,9 +1,10 @@
 # Janus Protect
 
 Janus Protect is an API-first platform for licensing, protecting, building, releasing, and
-monitoring WordPress plugins and themes. Version 0.2 contains authentication, organization tenancy,
+monitoring WordPress plugins and themes. Version 0.3 contains authentication, organization tenancy,
 WordPress projects, hostile ZIP validation, immutable source revisions, protection profiles,
-asynchronous builds, AST-based PHP analysis, signed integrity manifests, and protected artifacts.
+asynchronous builds, AST-based PHP analysis and local-variable obfuscation, signed integrity
+manifests, and protected artifacts.
 
 ## Local setup
 
@@ -23,7 +24,5 @@ idempotent and refuses to run when `NODE_ENV=production`.
 
 ## Roadmap
 
-- Version `0.3.0`: strengthen the protection engine with real, compatibility-first PHP
-  obfuscation and hardened isolated builds.
 - Version `0.4.0`: add complete plugin and theme licensing, including license keys, activation
   limits, domain binding, signed offline leases, and the WordPress License SDK.
