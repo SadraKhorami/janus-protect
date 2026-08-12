@@ -1,0 +1,23 @@
+name: Version guard
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.0
+      - run: git fetch origin main
+      - run: pnpm version:check
+        env:
+          VERSION_BASE_REF: origin/main

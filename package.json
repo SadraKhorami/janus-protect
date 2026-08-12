@@ -1,6 +1,6 @@
 {
   "name": "janus-protect",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "packageManager": "pnpm@10.26.0",
   "engines": {
@@ -8,19 +8,23 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --parallel",
+    "dev": "dotenv -e .env -- turbo run dev --parallel",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "db:generate": "pnpm --filter @janus/database generate",
-    "db:validate": "pnpm --filter @janus/database validate",
-    "db:migrate": "pnpm --filter @janus/database migrate",
+    "db:validate": "dotenv -e .env -- pnpm --filter @janus/database validate",
+    "db:migrate": "dotenv -e .env -- pnpm --filter @janus/database migrate",
+    "db:seed": "dotenv -e .env -- pnpm --filter @janus/database seed",
+    "version:check": "node scripts/check-version-bump.mjs",
+    "hooks:install": "git config core.hooksPath .githooks",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "9.32.0",
+    "dotenv-cli": "8.0.0",
     "eslint": "9.32.0",
     "prettier": "3.6.2",
     "turbo": "2.10.9",

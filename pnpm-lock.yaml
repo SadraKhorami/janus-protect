@@ -11,6 +11,9 @@ importers:
       '@eslint/js':
         specifier: 9.32.0
         version: 9.32.0
+      dotenv-cli:
+        specifier: 8.0.0
+        version: 8.0.0
       eslint:
         specifier: 9.32.0
         version: 9.32.0(jiti@2.7.0)
@@ -44,6 +47,9 @@ importers:
       '@janus/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@janus/protection-core':
+        specifier: workspace:*
+        version: link:../../packages/protection-core
       '@janus/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -71,6 +77,9 @@ importers:
       argon2:
         specifier: 0.44.0
         version: 0.44.0
+      bullmq:
+        specifier: 5.58.0
+        version: 5.58.0
       cookie-parser:
         specifier: 1.4.7
         version: 1.4.7
@@ -80,6 +89,9 @@ importers:
       jose:
         specifier: 6.0.13
         version: 6.0.13
+      multer:
+        specifier: 2.0.2
+        version: 2.0.2
       nodemailer:
         specifier: 7.0.5
         version: 7.0.5
@@ -102,6 +114,9 @@ importers:
       '@types/express':
         specifier: 5.0.3
         version: 5.0.3
+      '@types/multer':
+        specifier: 2.0.0
+        version: 2.0.0
       '@types/node':
         specifier: 24.2.1
         version: 24.2.1
@@ -161,6 +176,49 @@ importers:
         specifier: 3.2.4
         version: 3.2.4(@types/node@24.2.1)(jiti@2.7.0)(lightningcss@1.30.1)(tsx@4.20.4)
 
+  apps/worker-build:
+    dependencies:
+      '@janus/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@janus/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@janus/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@janus/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@janus/protection-core':
+        specifier: workspace:*
+        version: link:../../packages/protection-core
+      '@janus/queue':
+        specifier: workspace:*
+        version: link:../../packages/queue
+      '@janus/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
+      bullmq:
+        specifier: 5.58.0
+        version: 5.58.0
+      pino:
+        specifier: 9.9.0
+        version: 9.9.0
+    devDependencies:
+      '@types/node':
+        specifier: 24.2.1
+        version: 24.2.1
+      tsup:
+        specifier: 8.5.0
+        version: 8.5.0(jiti@2.7.0)(postcss@8.5.26)(tsx@4.20.4)(typescript@5.9.2)
+      tsx:
+        specifier: 4.20.4
+        version: 4.20.4
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/node@24.2.1)(jiti@2.7.0)(lightningcss@1.30.1)(tsx@4.20.4)
+
   packages/auth-core:
     dependencies:
       argon2:
@@ -204,6 +262,9 @@ importers:
       '@prisma/client':
         specifier: 6.14.0
         version: 6.14.0(prisma@6.14.0(typescript@5.9.2))(typescript@5.9.2)
+      argon2:
+        specifier: 0.44.0
+        version: 0.44.0
     devDependencies:
       '@types/node':
         specifier: 24.2.1
@@ -224,6 +285,31 @@ importers:
       '@types/node':
         specifier: 24.2.1
         version: 24.2.1
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/node@24.2.1)(jiti@2.7.0)(lightningcss@1.30.1)(tsx@4.20.4)
+
+  packages/protection-core:
+    dependencies:
+      '@janus/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      yauzl:
+        specifier: 3.2.0
+        version: 3.2.0
+      yazl:
+        specifier: 3.3.1
+        version: 3.3.1
+    devDependencies:
+      '@types/node':
+        specifier: 24.2.1
+        version: 24.2.1
+      '@types/yauzl':
+        specifier: 2.10.3
+        version: 2.10.3
+      '@types/yazl':
+        specifier: 3.3.0
+        version: 3.3.0
       vitest:
         specifier: 3.2.4
         version: 3.2.4(@types/node@24.2.1)(jiti@2.7.0)(lightningcss@1.30.1)(tsx@4.20.4)
@@ -1718,6 +1804,9 @@ packages:
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
+  '@types/multer@2.0.0':
+    resolution: {integrity: sha512-C3Z9v9Evij2yST3RSBktxP9STm6OdMc5uR1xF1SGr98uv8dUlAL2hqwrZ3GVB3uyMyiegnscEK6PGtYvNrjTjw==}
+
   '@types/node@24.2.1':
     resolution: {integrity: sha512-DRh5K+ka5eJic8CjH7td8QpYEV6Zo10gfRkjHCO3weqZHWDtAaSTFtl4+VMqOJ4N5jcuhZ9/l+yy8rVgw7BQeQ==}
 
@@ -1746,6 +1835,12 @@ packages:
 
   '@types/uuid@9.0.8':
     resolution: {integrity: sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==}
+
+  '@types/yauzl@2.10.3':
+    resolution: {integrity: sha512-oJoftv0LSuaDZE3Le4DbKX+KS9G36NzOeSap90UIK0yMA/NhKJhqlSGtNDORNRaIbQfzjXDrQa0ytJ6mNRGz/Q==}
+
+  '@types/yazl@3.3.0':
+    resolution: {integrity: sha512-mFL6lGkk2N5u5nIxpNV/K5LW3qVSbxhJrMxYGOOxZndWxMgCamr/iCsq/1t9kd8pEwhuNP91LC5qZm/qS9pOEw==}
 
   '@typescript-eslint/eslint-plugin@8.39.0':
     resolution: {integrity: sha512-bhEz6OZeUR+O/6yx9Jk6ohX6H9JSFTaiY0v9/PuKT3oGK0rn0jNplLmyFUGV+a9gfYnVNwGDwS/UkLIuXNb2Rw==}
@@ -1913,6 +2008,13 @@ packages:
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
     engines: {node: '>=8'}
+
+  buffer-crc32@0.2.13:
+    resolution: {integrity: sha512-VO9Ht/+p3SN7SKWqcrgEzjGbRSJYTx+Q1pTQC0wrWqHx0vpJraQ6GtHx8tvcg1rlK1byhU5gccxgOgj7B0TDkQ==}
+
+  buffer-crc32@1.0.0:
+    resolution: {integrity: sha512-Db1SbgBS/fg/392AblrMJk97KggmvYhr4pB5ZIMTWtaivCPMWLkmb7m21cJvpvgK+J3nsU2CmmixNBZx4vFj/w==}
+    engines: {node: '>=8.0.0'}
 
   buffer-from@1.1.2:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
@@ -2124,6 +2226,14 @@ packages:
 
   dezalgo@1.0.4:
     resolution: {integrity: sha512-rXSP0bf+5n0Qonsb+SVVfNfIsimO4HEtmnIpPHY8Q1UCzKlQrDMfdobr8nJOOsRgWCyMRqeSBQzmWUMq7zvVig==}
+
+  dotenv-cli@8.0.0:
+    resolution: {integrity: sha512-aLqYbK7xKOiTMIRf1lDPbI+Y+Ip/wo5k3eyp6ePysVaSqbyxjyK3dK35BTxG+rmd7djf5q2UPs4noPNH+cj0Qw==}
+    hasBin: true
+
+  dotenv-expand@10.0.0:
+    resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
+    engines: {node: '>=12'}
 
   dotenv@16.6.1:
     resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
@@ -2819,6 +2929,9 @@ packages:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
 
+  pend@1.2.0:
+    resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
+
   perfect-debounce@1.0.0:
     resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==}
 
@@ -3412,6 +3525,13 @@ packages:
   yallist@5.0.0:
     resolution: {integrity: sha512-YgvUTfwqyc7UXVMrB+SImsVYSmTS8X/tSrtdNZMImM+n7+QTriRXyXim0mBrTXNeqzVF0KWGgHPeiyViFFrNDw==}
     engines: {node: '>=18'}
+
+  yauzl@3.2.0:
+    resolution: {integrity: sha512-Ow9nuGZE+qp1u4JIPvg+uCiUr7xGQWdff7JQSk5VGYTAZMDe2q8lxJ10ygv10qmSj031Ty/6FNJpLO4o1Sgc+w==}
+    engines: {node: '>=12'}
+
+  yazl@3.3.1:
+    resolution: {integrity: sha512-BbETDVWG+VcMUle37k5Fqp//7SDOK2/1+T7X8TD96M3D9G8jK5VLUdQVdVjGi8im7FGkazX7kk5hkU8X4L5Bng==}
 
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
@@ -4993,6 +5113,10 @@ snapshots:
 
   '@types/json-schema@7.0.15': {}
 
+  '@types/multer@2.0.0':
+    dependencies:
+      '@types/express': 5.0.3
+
   '@types/node@24.2.1':
     dependencies:
       undici-types: 7.10.0
@@ -5024,6 +5148,14 @@ snapshots:
       '@types/node': 24.2.1
 
   '@types/uuid@9.0.8': {}
+
+  '@types/yauzl@2.10.3':
+    dependencies:
+      '@types/node': 24.2.1
+
+  '@types/yazl@3.3.0':
+    dependencies:
+      '@types/node': 24.2.1
 
   '@typescript-eslint/eslint-plugin@8.39.0(@typescript-eslint/parser@8.39.0(eslint@9.32.0(jiti@2.7.0))(typescript@5.9.2))(eslint@9.32.0(jiti@2.7.0))(typescript@5.9.2)':
     dependencies:
@@ -5242,6 +5374,10 @@ snapshots:
     dependencies:
       fill-range: 7.1.1
 
+  buffer-crc32@0.2.13: {}
+
+  buffer-crc32@1.0.0: {}
+
   buffer-from@1.1.2: {}
 
   bullmq@5.58.0:
@@ -5425,6 +5561,15 @@ snapshots:
     dependencies:
       asap: 2.0.6
       wrappy: 1.0.2
+
+  dotenv-cli@8.0.0:
+    dependencies:
+      cross-spawn: 7.0.6
+      dotenv: 16.6.1
+      dotenv-expand: 10.0.0
+      minimist: 1.2.8
+
+  dotenv-expand@10.0.0: {}
 
   dotenv@16.6.1: {}
 
@@ -6162,6 +6307,8 @@ snapshots:
 
   pathval@2.0.1: {}
 
+  pend@1.2.0: {}
+
   perfect-debounce@1.0.0: {}
 
   picocolors@1.1.1: {}
@@ -6809,6 +6956,15 @@ snapshots:
   xtend@4.0.2: {}
 
   yallist@5.0.0: {}
+
+  yauzl@3.2.0:
+    dependencies:
+      buffer-crc32: 0.2.13
+      pend: 1.2.0
+
+  yazl@3.3.1:
+    dependencies:
+      buffer-crc32: 1.0.0
 
   yocto-queue@0.1.0: {}
 
