@@ -170,14 +170,21 @@ function transformPhp(
       !matchesExcludedPath(relative(file.path, root), excludePaths),
   );
   const payload = JSON.stringify({
+    obfuscate: applyTransformation,
     files: candidates.map((file) => ({ path: file.path, content: file.data.toString('base64') })),
   });
-  const stdout = execFileSync('php', [transformer], {
-    input: payload,
-    encoding: 'utf8',
-    maxBuffer: 150 * 1024 * 1024,
-    timeout: 120_000,
-  });
+  const stdout = execFileSync(
+    'php',
+    ['-d', 'memory_limit=256M', '-d', 'max_execution_time=120', transformer],
+    {
+      input: payload,
+      encoding: 'utf8',
+      maxBuffer: 150 * 1024 * 1024,
+      timeout: 120_000,
+      killSignal: 'SIGKILL',
+      env: { PATH: process.env.PATH ?? '/usr/bin:/bin', LANG: 'C', LC_ALL: 'C' },
+    },
+  );
   const output = JSON.parse(stdout) as {
     files: Array<{ path: string; content: string }>;
     analysis: Record<string, unknown>;
@@ -191,7 +198,7 @@ function transformPhp(
       data: applyTransformation ? (transformed.get(file.path) ?? file.data) : file.data,
     })),
     report: {
-      transformer: 'nikic/php-parser + PHP tokenizer',
+      transformer: 'nikic/php-parser AST local-variable obfuscator',
       transformedFiles: applyTransformation ? transformed.size : 0,
       excludedFiles:
         files.filter((file) => file.path.toLowerCase().endsWith('.php')).length - candidates.length,
