@@ -1,6 +1,6 @@
 {
   "name": "@janus/api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "build": "tsup",
@@ -16,6 +16,7 @@
     "@janus/contracts": "workspace:*",
     "@janus/database": "workspace:*",
     "@janus/logger": "workspace:*",
+    "@janus/protection-core": "workspace:*",
     "@janus/queue": "workspace:*",
     "@janus/storage": "workspace:*",
     "@janus/validation": "workspace:*",
@@ -25,9 +26,11 @@
     "@nestjs/swagger": "11.2.0",
     "@prisma/client": "6.14.0",
     "argon2": "0.44.0",
+    "bullmq": "5.58.0",
     "cookie-parser": "1.4.7",
     "ioredis": "5.7.0",
     "jose": "6.0.13",
+    "multer": "2.0.2",
     "nodemailer": "7.0.5",
     "pino": "9.9.0",
     "reflect-metadata": "0.2.2",
@@ -37,6 +40,7 @@
   "devDependencies": {
     "@types/cookie-parser": "1.4.9",
     "@types/express": "5.0.3",
+    "@types/multer": "2.0.0",
     "@types/node": "24.2.1",
     "@types/nodemailer": "7.0.0",
     "supertest": "7.1.4",

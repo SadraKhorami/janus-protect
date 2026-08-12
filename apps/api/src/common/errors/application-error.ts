@@ -41,6 +41,16 @@ export const errors = {
       429,
     ),
   unauthorized: () => new ApplicationError('UNAUTHORIZED', 'Authentication is required.', 401),
+  forbidden: () => new ApplicationError('FORBIDDEN', 'You cannot access this resource.', 403),
+  notFound: (resource = 'Resource') =>
+    new ApplicationError('NOT_FOUND', `${resource} was not found.`, 404),
+  archiveInvalid: (code: string, message: string) => new ApplicationError(code, message, 422),
+  projectConflict: () =>
+    new ApplicationError('PROJECT_CONFLICT', 'A project with this slug already exists.', 409),
+  sourceRequired: () =>
+    new ApplicationError('PROJECT_SOURCE_REQUIRED', 'Upload project source before building.', 409),
+  buildConflict: () =>
+    new ApplicationError('BUILD_VERSION_CONFLICT', 'This project version already exists.', 409),
   serviceUnavailable: () =>
     new ApplicationError('DEPENDENCY_UNAVAILABLE', 'A required service is unavailable.', 503),
 };
