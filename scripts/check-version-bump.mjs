@@ -4,7 +4,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const base = process.env.VERSION_BASE_REF || 'origin/main';
-const productionPattern = /^(apps|packages|services|sdks)\/|^compose\.yaml$|^pnpm-lock\.yaml$/;
+const productionPattern =
+  /^(apps|deploy|packages|services|sdks)\/|^scripts\/(deploy|setup-server)\.sh$|^compose\.yaml$|^pnpm-lock\.yaml$/;
 const repositoryRoot = dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
 
 function git(args) {
@@ -56,19 +57,33 @@ const changed = new Set(
   [committed, working, staged, untracked].flatMap((output) => output.split('\n').filter(Boolean)),
 );
 const productionChanged = [...changed].some((file) => productionPattern.test(file));
+const currentVersionIsReleased = tagExists(`v${currentPackage.version}`);
 
-if (productionChanged && compareVersions(currentPackage.version, basePackage.version) <= 0) {
+if (
+  productionChanged &&
+  compareVersions(currentPackage.version, basePackage.version) <= 0 &&
+  currentVersionIsReleased
+) {
   process.stderr.write(
-    `Production changes require a version newer than ${basePackage.version}; current is ${currentPackage.version}.\n`,
+    `Version ${currentPackage.version} is already released. Production changes require a newer version.\n`,
   );
   process.exit(1);
 }
 
 process.stdout.write(
   productionChanged
-    ? `Version guard passed: ${basePackage.version} -> ${currentPackage.version}.\n`
+    ? `Version guard passed for unreleased ${currentPackage.version}.\n`
     : 'Version guard passed: no production changes detected.\n',
 );
+
+function tagExists(tag) {
+  try {
+    git(['rev-parse', '--verify', '--quiet', `refs/tags/${tag}`]);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function compareVersions(left, right) {
   const leftParts = left.split('.').map(Number);
