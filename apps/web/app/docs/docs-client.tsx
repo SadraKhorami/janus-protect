@@ -775,11 +775,7 @@ function Roadmap({ fa }: { fa: boolean }) {
       id="roadmap"
       title={fa ? 'محدودیت های فعلی و مسیر بعدی' : 'Current limits and next work'}
     >
-      <p>
-        {fa
-          ? 'موارد زیر هنوز کامل نشده‌اند:'
-          : 'The following items are not complete yet:'}
-      </p>
+      <p>{fa ? 'موارد زیر هنوز کامل نشده‌اند:' : 'The following items are not complete yet:'}</p>
       <div className="docs-roadmap-list">
         {(fa
           ? [
