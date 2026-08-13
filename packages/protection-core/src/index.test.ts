@@ -92,6 +92,8 @@ describe('BasicProtectionEngine', () => {
         apiUrl: 'https://licenses.example.com/api/v1',
         projectId: 'f231f93e-80fa-4821-96ba-cd5ffcab283e',
         projectType: ProjectType.PLUGIN,
+        productName: 'Sample',
+        productVersion: '1.2.3',
         publicKey: licensingPublicKey,
       },
       transformPhp: (files) =>
@@ -116,6 +118,10 @@ describe('BasicProtectionEngine', () => {
     expect(licensing).toContain('wordpress-sdk/0.4');
     expect(licensing).toContain("do_action('janus_protect_license_invalid'");
     expect(licensing).toContain("$GLOBALS['janus_protect_license_checks']");
+    expect(licensing).toContain('class="jp-license"');
+    expect(licensing).toContain('Activate your license');
+    expect(licensing).toContain('Check license now');
+    expect(licensing).toContain('productName');
     expect(manifest).toBeDefined();
     expect(signatureFile).toBeDefined();
 
@@ -196,6 +202,8 @@ describe('BasicProtectionEngine', () => {
         apiUrl: 'https://licenses.example.com/api/v1',
         projectId: 'f231f93e-80fa-4821-96ba-cd5ffcab283e',
         projectType: ProjectType.PLUGIN,
+        productName: 'Sample',
+        productVersion: '1.0.1',
         publicKey: createPublicKey(privateKey)
           .export({ format: 'der', type: 'spki' })
           .toString('base64'),

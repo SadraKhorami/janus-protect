@@ -70,6 +70,8 @@ async function processBuild(job: Job<{ buildId: string }>, database: PrismaClien
         apiUrl: config.LICENSE_API_URL,
         projectId: build.projectId,
         projectType: inspected.analysis.type,
+        productName: build.project.name,
+        productVersion: build.version,
         publicKey: licensingPublicKey(config.BUILD_SIGNING_PRIVATE_KEY),
       },
       transformPhp: (files) =>

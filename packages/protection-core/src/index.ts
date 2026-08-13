@@ -45,6 +45,8 @@ export type ProtectionInput = {
     apiUrl: string;
     projectId: string;
     projectType: ProjectType;
+    productName: string;
+    productVersion: string;
     publicKey: string;
   };
   transformPhp: (files: ArchiveFile[]) => Promise<{
@@ -528,6 +530,10 @@ if (!defined('ABSPATH')) { return; }
         $command = sanitize_key((string) ($_POST['janus_command'] ?? ''));
         if ($command === 'deactivate' && is_array($saved) && !empty($saved['activationToken'])) {
             $request('deactivate', ['projectId' => $config['projectId'], 'activationToken' => $saved['activationToken'], 'siteUrl' => home_url('/')]); delete_option($option);
+        } elseif ($command === 'refresh' && is_array($saved) && !empty($saved['activationToken'])) {
+            $result = $request('validate', ['projectId' => $config['projectId'], 'activationToken' => $saved['activationToken'], 'siteUrl' => home_url('/')]);
+            if ($result['ok']) { $saved['lease'] = $result['data']['lease']; $saved['checkedAt'] = time(); $saved['error'] = ''; update_option($option, $saved, false); }
+            else { $saved['error'] = $result['error']; update_option($option, $saved, false); }
         } elseif ($command === 'activate') {
             $key = sanitize_text_field(wp_unslash((string) ($_POST['license_key'] ?? '')));
             $result = $request('activate', ['projectId' => $config['projectId'], 'key' => $key, 'siteUrl' => home_url('/')]);
@@ -545,15 +551,58 @@ if (!defined('ABSPATH')) { return; }
         if (!wp_next_scheduled($cronAction)) { wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', $cronAction); }
         if (!$isValid()) { do_action('janus_protect_license_invalid', (string) $config['projectId']); }
     });
-    add_action('admin_menu', static function () use ($config, $option, $page, $postAction, $isValid): void {
-        $render = static function () use ($option, $page, $postAction, $isValid): void {
-            $saved = get_option($option, []); $valid = $isValid();
-            echo '<div class="wrap"><h1>' . esc_html__('Janus License', 'janus-protect') . '</h1><p><strong>' . esc_html__('Status:', 'janus-protect') . '</strong> ' . ($valid ? '<span style="color:#16803a">' . esc_html__('Active', 'janus-protect') . '</span>' : '<span style="color:#b42318">' . esc_html__('Inactive or offline lease expired', 'janus-protect') . '</span>') . '</p>';
-            if (is_array($saved) && !empty($saved['error'])) { echo '<div class="notice notice-error"><p>' . esc_html((string) $saved['error']) . '</p></div>'; }
-            echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="' . esc_attr($postAction) . '">'; wp_nonce_field($page);
-            if (!empty($saved['activationToken'])) { echo '<p>' . esc_html((string) ($saved['maskedKey'] ?? '')) . '</p><input type="hidden" name="janus_command" value="deactivate"><button class="button">' . esc_html__('Deactivate license', 'janus-protect') . '</button>'; }
-            else { echo '<input class="regular-text" required name="license_key" autocomplete="off" placeholder="JP-XXXXXX-XXXXXX-XXXXXX"><input type="hidden" name="janus_command" value="activate"> <button class="button button-primary">' . esc_html__('Activate license', 'janus-protect') . '</button>'; }
-            echo '</form></div>';
+    add_action('admin_menu', static function () use ($config, $option, $page, $postAction, $isValid, $site): void {
+        $render = static function () use ($config, $option, $page, $postAction, $isValid, $site): void {
+            $saved = get_option($option, []); $saved = is_array($saved) ? $saved : []; $valid = $isValid();
+            $hasActivation = !empty($saved['activationToken']);
+            $status = $valid ? 'Active' : ($hasActivation ? 'Lease expired' : 'License required');
+            $statusClass = $valid ? 'is-active' : ($hasActivation ? 'is-warning' : 'is-inactive');
+            $statusText = $valid ? 'This product is licensed and ready to use.' : ($hasActivation ? 'The saved license could not be verified. Refresh it or contact the product owner.' : 'Activate a license to unlock this product on the current site.');
+            $claims = [];
+            if (!empty($saved['lease']['payload']) && is_string($saved['lease']['payload'])) {
+                $value = $saved['lease']['payload'];
+                $decoded = base64_decode(strtr($value, '-_', '+/') . str_repeat('=', (4 - strlen($value) % 4) % 4), true);
+                $claims = is_string($decoded) ? json_decode($decoded, true) : [];
+                $claims = is_array($claims) ? $claims : [];
+            }
+            $checked = !empty($saved['checkedAt']) ? wp_date('M j, Y · H:i', (int) $saved['checkedAt']) : 'Not checked yet';
+            $expires = !empty($claims['exp']) ? wp_date('M j, Y · H:i', (int) $claims['exp']) : '—';
+            $product = !empty($config['productName']) ? (string) $config['productName'] : ($config['projectType'] === 'THEME' ? 'Protected theme' : 'Protected plugin');
+            $version = !empty($config['productVersion']) ? (string) $config['productVersion'] : '—';
+            ?>
+            <style>
+                #wpcontent { padding-left: 0; }
+                .jp-license { --jp-bg:#09090b;--jp-card:#111113;--jp-soft:#18181b;--jp-border:#27272a;--jp-fg:#fafafa;--jp-muted:#a1a1aa;--jp-subtle:#71717a;--jp-accent:#6ee7b7;min-height:calc(100vh - 32px);background:var(--jp-bg);color:var(--jp-fg);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:0 0 64px;box-sizing:border-box}
+                .jp-license *{box-sizing:border-box}.jp-license a{color:inherit}.jp-header{height:68px;border-bottom:1px solid var(--jp-border);display:flex;align-items:center;padding:0 40px;background:rgba(9,9,11,.9)}
+                .jp-brand{display:flex;align-items:center;gap:11px;font-size:15px;font-weight:650}.jp-mark{width:32px;height:32px;border:1px solid #3f3f46;border-radius:9px;display:grid;place-items:center;background:#151518;color:var(--jp-accent)}.jp-mark svg{width:17px;height:17px}
+                .jp-header-meta{margin-left:auto;color:var(--jp-subtle);font-size:12px}.jp-main{max-width:1080px;margin:0 auto;padding:58px 30px}.jp-kicker{color:var(--jp-accent);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px}.jp-title{font-size:34px;line-height:1.2;letter-spacing:-.035em;margin:0 0 10px;color:var(--jp-fg)}.jp-lead{font-size:15px;line-height:1.7;color:var(--jp-muted);margin:0;max-width:650px}
+                .jp-status{display:flex;align-items:flex-start;gap:15px;margin-top:32px;padding:20px 22px;border:1px solid var(--jp-border);border-radius:12px;background:var(--jp-card)}.jp-status-dot{width:9px;height:9px;margin-top:6px;border-radius:50%;background:#f87171;box-shadow:0 0 0 5px rgba(248,113,113,.1)}.jp-status.is-active .jp-status-dot{background:var(--jp-accent);box-shadow:0 0 0 5px rgba(110,231,183,.1)}.jp-status.is-warning .jp-status-dot{background:#fbbf24;box-shadow:0 0 0 5px rgba(251,191,36,.1)}.jp-status strong{display:block;font-size:14px;margin-bottom:3px}.jp-status p{margin:0;color:var(--jp-muted);font-size:13px;line-height:1.55}
+                .jp-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.75fr);gap:18px;margin-top:18px}.jp-card{border:1px solid var(--jp-border);border-radius:12px;background:var(--jp-card);padding:25px}.jp-card-head{margin-bottom:22px}.jp-card h2{font-size:16px;line-height:1.3;margin:0 0 7px;color:var(--jp-fg)}.jp-card p{color:var(--jp-muted);font-size:13px;line-height:1.65;margin:0}.jp-label{display:block;color:#d4d4d8;font-size:12px;font-weight:650;margin-bottom:8px}.jp-field{display:flex;gap:9px}.jp-input{width:100%;height:44px!important;border:1px solid #3f3f46!important;border-radius:8px!important;background:#09090b!important;color:var(--jp-fg)!important;padding:0 13px!important;font-family:ui-monospace,SFMono-Regular,Menlo,monospace!important;font-size:13px!important;box-shadow:none!important}.jp-input:focus{border-color:var(--jp-accent)!important;box-shadow:0 0 0 3px rgba(110,231,183,.12)!important}.jp-button{height:44px;border:1px solid transparent;border-radius:8px;padding:0 17px;background:#f4f4f5;color:#18181b;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}.jp-button:hover{background:#fff}.jp-button.secondary{background:transparent;border-color:#3f3f46;color:#d4d4d8}.jp-button.secondary:hover{border-color:#52525b;background:var(--jp-soft)}.jp-actions{display:flex;gap:9px;flex-wrap:wrap}.jp-help{margin-top:12px!important;color:var(--jp-subtle)!important;font-size:12px!important}.jp-error{margin-bottom:17px;padding:11px 13px;border:1px solid rgba(248,113,113,.28);border-radius:8px;background:rgba(127,29,29,.15);color:#fca5a5;font-size:12px;line-height:1.55}
+                .jp-details{display:grid;gap:0}.jp-detail{display:flex;justify-content:space-between;gap:20px;padding:13px 0;border-bottom:1px solid var(--jp-border);font-size:12px}.jp-detail:first-child{padding-top:0}.jp-detail:last-child{border:0;padding-bottom:0}.jp-detail span{color:var(--jp-subtle)}.jp-detail strong{color:#d4d4d8;font-weight:550;text-align:right;overflow-wrap:anywhere}.jp-security{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.jp-security-item{border:1px solid var(--jp-border);border-radius:10px;background:var(--jp-card);padding:17px}.jp-security-icon{color:var(--jp-accent);font-size:16px;margin-bottom:10px}.jp-security-item strong{display:block;font-size:12px;margin-bottom:4px}.jp-security-item span{font-size:11px;color:var(--jp-subtle)}.jp-footer{display:flex;justify-content:space-between;gap:18px;margin-top:25px;color:var(--jp-subtle);font-size:11px}.jp-footer a{text-decoration:none;color:var(--jp-muted)}.jp-footer a:hover{color:var(--jp-fg)}
+                @media(max-width:782px){#wpcontent{padding-left:0}.jp-license{min-height:100vh}.jp-header{padding:0 20px}.jp-main{padding:38px 18px}.jp-title{font-size:28px}.jp-grid{grid-template-columns:1fr}.jp-security{grid-template-columns:1fr}.jp-field{flex-direction:column}.jp-button{width:100%}.jp-footer{flex-direction:column}}
+            </style>
+            <div class="jp-license">
+                <header class="jp-header"><div class="jp-brand"><span class="jp-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 4.5 6v5.3c0 4.7 3.1 8.1 7.5 9.7 4.4-1.6 7.5-5 7.5-9.7V6L12 3Z"/><path d="m9.3 12 1.8 1.8 3.8-4"/></svg></span><span>Janus Protect</span></div><div class="jp-header-meta"><?php echo esc_html($product . ' · v' . $version); ?></div></header>
+                <main class="jp-main">
+                    <div class="jp-kicker"><?php echo esc_html($config['projectType'] === 'THEME' ? 'Theme license' : 'Plugin license'); ?></div>
+                    <h1 class="jp-title"><?php echo esc_html($product); ?></h1>
+                    <p class="jp-lead">Manage access for this protected WordPress product. License validation is signed, site-bound and supports temporary offline use.</p>
+                    <section class="jp-status <?php echo esc_attr($statusClass); ?>"><span class="jp-status-dot"></span><div><strong><?php echo esc_html($status); ?></strong><p><?php echo esc_html($statusText); ?></p></div></section>
+                    <div class="jp-grid">
+                        <section class="jp-card"><div class="jp-card-head"><h2><?php echo $hasActivation ? 'License controls' : 'Activate your license'; ?></h2><p><?php echo $hasActivation ? 'Refresh the signed lease or remove this site activation.' : 'Enter the license key supplied with this product.'; ?></p></div>
+                            <?php if (!empty($saved['error'])): ?><div class="jp-error"><?php echo esc_html((string) $saved['error']); ?></div><?php endif; ?>
+                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"><input type="hidden" name="action" value="<?php echo esc_attr($postAction); ?>"><?php wp_nonce_field($page); ?>
+                                <?php if ($hasActivation): ?><div class="jp-actions"><button class="jp-button" name="janus_command" value="refresh">Check license now</button><button class="jp-button secondary" name="janus_command" value="deactivate">Deactivate this site</button></div>
+                                <?php else: ?><label class="jp-label" for="jp-license-key">License key</label><div class="jp-field"><input id="jp-license-key" class="jp-input" required name="license_key" autocomplete="off" spellcheck="false" placeholder="JP-XXXXXX-XXXXXX-XXXXXX"><button class="jp-button" name="janus_command" value="activate">Activate license</button></div><p class="jp-help">The key is sent securely to the Janus licensing endpoint and is never stored in plain text.</p><?php endif; ?>
+                            </form>
+                        </section>
+                        <aside class="jp-card"><div class="jp-card-head"><h2>License details</h2><p>Current installation and lease information.</p></div><div class="jp-details"><div class="jp-detail"><span>Site</span><strong><?php echo esc_html($site()); ?></strong></div><div class="jp-detail"><span>License</span><strong><?php echo esc_html((string) ($saved['maskedKey'] ?? 'Not activated')); ?></strong></div><div class="jp-detail"><span>Last checked</span><strong><?php echo esc_html($checked); ?></strong></div><div class="jp-detail"><span>Offline lease</span><strong><?php echo esc_html($expires); ?></strong></div></div></aside>
+                    </div>
+                    <section class="jp-security"><div class="jp-security-item"><div class="jp-security-icon">◇</div><strong>Site-bound access</strong><span><?php echo esc_html($site()); ?></span></div><div class="jp-security-item"><div class="jp-security-icon">✓</div><strong>Signed validation</strong><span>Ed25519 lease verification</span></div><div class="jp-security-item"><div class="jp-security-icon">↻</div><strong>Offline support</strong><span>Up to 7 days per lease</span></div></section>
+                    <footer class="jp-footer"><span>Protected by Janus Protect</span><a href="https://janus.khorami.dev/docs" target="_blank" rel="noopener noreferrer">Documentation ↗</a></footer>
+                </main>
+            </div>
+            <?php
         };
         if ($config['projectType'] === 'THEME') { add_theme_page(__('License', 'janus-protect'), __('License', 'janus-protect'), 'manage_options', $page, $render); } else { add_options_page(__('License', 'janus-protect'), __('License', 'janus-protect'), 'manage_options', $page, $render); }
     });
