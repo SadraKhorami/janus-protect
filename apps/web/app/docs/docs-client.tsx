@@ -560,7 +560,12 @@ function ApiReference({ fa }: { fa: boolean }) {
   const licenseRows = [
     ['POST', '/projects/{projectId}/licenses', 'Bearer', 'projectId + license options'],
     ['GET', '/projects/{projectId}/licenses', 'Bearer', 'projectId: UUID'],
-    ['POST', '/projects/{projectId}/licenses/{licenseId}/revoke', 'Bearer', 'projectId + licenseId'],
+    [
+      'POST',
+      '/projects/{projectId}/licenses/{licenseId}/revoke',
+      'Bearer',
+      'projectId + licenseId',
+    ],
     ['POST', '/licenses/activate', 'Public', 'projectId, key, siteUrl'],
     ['POST', '/licenses/validate', 'Public', 'projectId, activationToken, siteUrl'],
     ['POST', '/licenses/deactivate', 'Public', 'projectId, activationToken, siteUrl'],
@@ -607,7 +612,11 @@ function ApiReference({ fa }: { fa: boolean }) {
       </p>
 
       <ApiTable title={fa ? 'حساب و نشست' : 'Accounts and sessions'} rows={authRows} fa={fa} />
-      <ApiTable title={fa ? 'پروژه، سورس و build' : 'Projects, source and builds'} rows={projectRows} fa={fa} />
+      <ApiTable
+        title={fa ? 'پروژه، سورس و build' : 'Projects, source and builds'}
+        rows={projectRows}
+        fa={fa}
+      />
       <ApiTable title={fa ? 'لایسنس' : 'Licensing'} rows={licenseRows} fa={fa} />
 
       <h3>{fa ? 'Bodyهای اصلی' : 'Primary request bodies'}</h3>
@@ -708,15 +717,7 @@ file: <plugin-or-theme.zip>`}
   );
 }
 
-function ApiTable({
-  title,
-  rows,
-  fa,
-}: {
-  title: string;
-  rows: string[][];
-  fa: boolean;
-}) {
+function ApiTable({ title, rows, fa }: { title: string; rows: string[][]; fa: boolean }) {
   return (
     <>
       <h3>{title}</h3>
