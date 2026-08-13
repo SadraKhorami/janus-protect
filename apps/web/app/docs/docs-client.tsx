@@ -184,9 +184,6 @@ export function DocsClient({ version }: { version: string }) {
             <Security fa={fa} />
             <Roadmap fa={fa} />
             <footer className="docs-footer">
-              <span>
-                {fa ? 'آخرین بازبینی برای شاخه main' : 'Reviewed against the main branch'}
-              </span>
               <a
                 href="https://github.com/SadraKhorami/janus-protect"
                 target="_blank"
@@ -266,11 +263,6 @@ function Introduction({ fa, version }: { fa: boolean; version: string }) {
           ? 'Janus Protect یک پلتفرم API-first برای مدیریت سورس، ساخت نسخه محافظت شده، لایسنس و در ادامه انتشار و پایش افزونه ها و قالب های وردپرس است.'
           : 'Janus Protect is an API-first platform for source management, protected builds, licensing and, over time, release delivery and monitoring for WordPress plugins and themes.'}
       </p>
-      <p>
-        {fa
-          ? 'پروژه از ابتدا برای محصولاتی ساخته شده که باید بیرون از تیم توسعه توزیع شوند. هر سورس به صورت یک revision تغییر ناپذیر ثبت می شود، build در صف جدا اجرا می شود و خروجی همراه گزارش تحلیل، manifest یکپارچگی و امضای دیجیتال تحویل داده می شود.'
-          : 'The platform is designed for products distributed outside their development team. Each source upload becomes an immutable revision, builds run asynchronously, and every output is accompanied by analysis, integrity metadata and a digital signature.'}
-      </p>
       <div className="docs-callout note">
         <InfoIcon />
         <div>
@@ -321,17 +313,6 @@ function Status({ fa, version }: { fa: boolean; version: string }) {
           : `The platform version is ${version} across every workspace. It is separate from the plugin or theme version supplied for a protected build; each WordPress product keeps its own release history.`}
       </p>
       <StatusTable fa={fa} />
-      <div className="docs-callout warning">
-        <WarningIcon />
-        <div>
-          <strong>{fa ? 'تعریف دقیق وضعیت' : 'Status matters'}</strong>
-          <span>
-            {fa
-              ? 'موجود یعنی مسیر backend و contract پیاده شده است. کامل بودن UI مدیریتی برای تمام قابلیت ها ادعا نمی شود.'
-              : 'Available means the backend path and contract are implemented. It does not imply that every capability already has a complete management UI.'}
-          </span>
-        </div>
-      </div>
     </DocSection>
   );
 }
@@ -399,8 +380,8 @@ function Architecture({ fa }: { fa: boolean }) {
     <DocSection id="architecture" title={fa ? 'معماری' : 'Architecture'}>
       <p>
         {fa
-          ? 'Janus یک modular monolith در monorepo مبتنی بر pnpm و Turborepo است. مرزهای دامنه در کد جدا هستند، اما تا زمانی که مقیاس یا عملیات نیاز نداشته باشد به سرویس های شبکه ای ریز تقسیم نمی شوند.'
-          : 'Janus is a modular monolith in a pnpm and Turborepo monorepo. Domain boundaries are explicit in code without splitting the system into network services before scale or operations require it.'}
+          ? 'Janus یک modular monolith در monorepo مبتنی بر pnpm و Turborepo است.'
+          : 'Janus is a modular monolith in a pnpm and Turborepo monorepo.'}
       </p>
       <div className="docs-architecture">
         <ArchitectureNode
@@ -796,8 +777,8 @@ function Roadmap({ fa }: { fa: boolean }) {
     >
       <p>
         {fa
-          ? 'نسخه 0.5.0 خط انتشار و عملیات را استاندارد می کند و پایه release delivery و monitoring را جلو می برد. این موارد هنوز باید قبل از ادعای production-complete شدن پلتفرم تکمیل شوند:'
-          : 'Version 0.5.0 standardizes release operations and advances the foundation for update delivery and monitoring. The following work remains before the platform can be described as production-complete:'}
+          ? 'موارد زیر هنوز کامل نشده‌اند:'
+          : 'The following items are not complete yet:'}
       </p>
       <div className="docs-roadmap-list">
         {(fa
@@ -851,17 +832,6 @@ function Roadmap({ fa }: { fa: boolean }) {
             </div>
           </div>
         ))}
-      </div>
-      <div className="docs-callout note">
-        <InfoIcon />
-        <div>
-          <strong>{fa ? 'اصل roadmap' : 'Roadmap rule'}</strong>
-          <span>
-            {fa
-              ? 'هر ادعا باید با contract، تست و رفتار قابل مشاهده پشتیبانی شود. قابلیت نیمه کاره به عنوان قابلیت کامل معرفی نمی شود.'
-              : 'Every capability claim must be backed by a contract, tests and observable behavior. Partial work is not presented as a completed feature.'}
-          </span>
-        </div>
       </div>
     </DocSection>
   );
