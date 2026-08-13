@@ -100,4 +100,4 @@ jobs:
       - name: Verify public application
         run: |
           curl --fail --silent --show-error --retry 10 --retry-delay 3 https://janus.khorami.dev/ >/dev/null
-          curl --fail --silent --show-error --retry 10 --retry-delay 3 https://janus.khorami.dev/health/ready >/dev/null
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 https://janus.khorami.dev/docs >/dev/null
