@@ -67,6 +67,30 @@ describe('inspectWordPressArchive', () => {
 });
 
 describe('BasicProtectionEngine', () => {
+  it('accepts a build version that already matches the plugin header', async () => {
+    const source = await inspectWordPressArchive(
+      await zip({
+        'sample/sample.php': '<?php\n/**\n * Plugin Name: Sample\n * Version: 1.0.0\n */\n',
+      }),
+    );
+    const result = await new BasicProtectionEngine().protect({
+      ...source,
+      level: ProtectionLevel.BASIC,
+      version: '1.0.0',
+      signingPrivateKey: '',
+      runtimeInjection: false,
+      integrity: false,
+      obfuscation: false,
+      transformPhp: (files) => Promise.resolve({ files, report: {} }),
+    });
+    const output = await inspectWordPressArchive(result.archive);
+    const entry = output.files
+      .find((file) => file.path === 'sample/sample.php')
+      ?.data.toString('utf8');
+
+    expect(entry).toContain('Version: 1.0.0');
+  });
+
   it('versions, signs and packages an independently verifiable plugin build', async () => {
     const source = await inspectWordPressArchive(
       await zip({
