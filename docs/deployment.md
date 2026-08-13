@@ -21,7 +21,7 @@ Edit both files, then run:
 scripts/deploy.sh --ref main
 ```
 
-For a production release, deploy an immutable version tag instead:
+You can also deploy a specific version tag manually:
 
 ```bash
 scripts/deploy.sh --ref v0.5.0
@@ -43,10 +43,12 @@ mode `0600`:
 /opt/janus-protect/.infra.env
 ```
 
-## Continuous integration
+## Continuous deployment
 
 GitHub Actions runs formatting, linting, type-checking, tests and a full production build for every
-push and pull request targeting `main`.
+push and pull request targeting `main`. A successful push to `main` then backs up the production
+database and deploys that exact commit. Pull requests run verification only and never change the
+server. Deployment jobs are serialized so two builds cannot modify production at the same time.
 
 To publish the version already declared in all `package.json` files, run from a clean and synchronized
 `main` branch:
@@ -56,6 +58,5 @@ pnpm release
 ```
 
 This runs the complete local check and pushes an annotated version tag. GitHub Actions independently
-verifies the tag, creates a PostgreSQL backup, deploys that exact revision, checks the internal and
-public application, and publishes generated GitHub release notes. Normal pushes never deploy
-production.
+verifies the tag and publishes generated GitHub release notes. The tag records a formal version;
+production has already received the same commit through the successful `main` workflow.

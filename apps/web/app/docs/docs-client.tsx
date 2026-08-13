@@ -296,7 +296,7 @@ function Introduction({ fa, version }: { fa: boolean; version: string }) {
           text={
             fa
               ? 'صف build، artifact تغییر ناپذیر، CI، deployment نسخه محور و health check.'
-              : 'Build queues, immutable artifacts, CI, tag-driven deployment and health checks.'
+              : 'Build queues, immutable artifacts, CI, commit-based deployment and health checks.'
           }
         />
       </div>
@@ -688,8 +688,8 @@ function Releases({ fa }: { fa: boolean }) {
     >
       <p>
         {fa
-          ? 'push و pull request روی main فقط CI را اجرا می کنند و production را تغییر نمی دهند. انتشار production با annotated tag انجام می شود تا سرور همیشه به یک commit مشخص و قابل ردیابی متصل باشد.'
-          : 'Pushes and pull requests against main run CI without changing production. Production is released from an annotated version tag so the server always maps to a specific, traceable commit.'}
+          ? 'pull request فقط بررسی می شود. هر push موفق روی main بعد از عبور از CI، از دیتابیس backup می گیرد و همان commit را روی production deploy می کند. deployها پشت سر هم اجرا می شوند تا هم زمان سرور را تغییر ندهند.'
+          : 'Pull requests are verified without deployment. Every successful push to main backs up the database and deploys that exact commit to production. Deployments are serialized to prevent concurrent server changes.'}
       </p>
       <div className="docs-release-flow">
         <span>PR</span>
@@ -698,11 +698,11 @@ function Releases({ fa }: { fa: boolean }) {
         <i>→</i>
         <span>main</span>
         <i>→</i>
-        <span>pnpm release</span>
-        <i>→</i>
-        <span>vX.Y.Z</span>
+        <span>deploy</span>
         <i>→</i>
         <span>production</span>
+        <i>→</i>
+        <span>pnpm release</span>
       </div>
       <CodeBlock
         title={fa ? 'انتشار نسخه آماده' : 'Publish the prepared version'}
@@ -710,8 +710,8 @@ function Releases({ fa }: { fa: boolean }) {
       />
       <p>
         {fa
-          ? 'release script تمیز بودن working tree، تطابق local main با origin، شماره نسخه و تمام checkها را کنترل می کند. بعد از push شدن tag، GitHub دوباره build را تایید می کند، backup می گیرد، همان tag را deploy می کند، سلامت عمومی را می سنجد و GitHub Release می سازد.'
-          : 'The release script checks a clean working tree, exact local/origin main parity, the version and the complete test suite. Once the tag is pushed, GitHub independently verifies the build, takes a backup, deploys that tag, checks the public service and creates a GitHub Release.'}
+          ? 'release script تمیز بودن working tree، تطابق local main با origin، شماره نسخه و تمام checkها را کنترل می کند. سپس tag نسخه را push می کند تا GitHub Release ساخته شود. production قبل از آن با workflow موفق main به روز شده است.'
+          : 'The release script checks a clean working tree, exact local/origin main parity, the version and the complete test suite. It then pushes the version tag and creates the GitHub Release. Production was already updated by the successful main workflow.'}
       </p>
     </DocSection>
   );
@@ -937,7 +937,7 @@ function StatusTable({ fa }: { fa: boolean }) {
         ['پروژه و source revision', 'موجود'],
         ['build و artifact محافظت شده', 'موجود'],
         ['لایسنس و UI داخل WordPress', 'موجود'],
-        ['CI و deployment نسخه محور', 'موجود'],
+        ['CI و deployment خودکار main', 'موجود'],
         ['پنل مدیریتی کامل', 'در حال توسعه'],
         ['update delivery و monitoring', 'برنامه بعدی'],
       ]
@@ -946,7 +946,7 @@ function StatusTable({ fa }: { fa: boolean }) {
         ['Projects and source revisions', 'Available'],
         ['Protected builds and artifacts', 'Available'],
         ['Licensing and embedded WordPress UI', 'Available'],
-        ['CI and tag-driven deployment', 'Available'],
+        ['CI and automatic main deployment', 'Available'],
         ['Complete management console', 'In progress'],
         ['Update delivery and monitoring', 'Next'],
       ];
