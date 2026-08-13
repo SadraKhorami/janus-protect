@@ -114,7 +114,7 @@ describe('BasicProtectionEngine', () => {
       "empty($GLOBALS['janus_protect_license_checks']['f231f93e-80fa-4821-96ba-cd5ffcab283e'])",
     );
     expect(runtime).toContain("do_action('janus_protect_integrity_failed'");
-    expect(licensing).toContain("add_options_page(__('License'");
+    expect(licensing).toContain("add_menu_page(__('Janus Protect'");
     expect(licensing).toContain('wordpress-sdk/0.4');
     expect(licensing).toContain("do_action('janus_protect_license_invalid'");
     expect(licensing).toContain("$GLOBALS['janus_protect_license_checks']");
@@ -122,6 +122,9 @@ describe('BasicProtectionEngine', () => {
     expect(licensing).toContain('Activate your license');
     expect(licensing).toContain('Check license now');
     expect(licensing).toContain('productName');
+    expect(licensing).toContain("$GLOBALS['janus_protect_products']");
+    expect(licensing).toContain('Protected products');
+    expect(licensing).toContain('All protected products');
     expect(manifest).toBeDefined();
     expect(signatureFile).toBeDefined();
 
