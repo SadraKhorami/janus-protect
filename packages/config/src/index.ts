@@ -10,6 +10,7 @@ const booleanString = z
 
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  API_HOST: z.string().min(1).default('0.0.0.0'),
   API_PORT: z.coerce.number().int().positive().default(4000),
   WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
   LICENSE_API_URL: z.string().url().default('http://localhost:4000/api/v1'),

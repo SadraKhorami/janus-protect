@@ -1,6 +1,6 @@
 {
   "name": "janus-protect",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "packageManager": "pnpm@10.26.0",
   "engines": {
@@ -20,6 +20,7 @@
     "db:seed": "dotenv -e .env -- pnpm --filter @janus/database seed",
     "version:check": "node scripts/check-version-bump.mjs",
     "hooks:install": "git config core.hooksPath .githooks",
+    "deploy": "scripts/deploy.sh",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {

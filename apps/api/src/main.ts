@@ -44,8 +44,8 @@ async function bootstrap(): Promise<void> {
     .build();
   SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, swaggerConfig));
 
-  await app.listen(config.API_PORT, '0.0.0.0');
-  logger.info({ port: config.API_PORT }, 'Janus Protect API started');
+  await app.listen(config.API_PORT, config.API_HOST);
+  logger.info({ host: config.API_HOST, port: config.API_PORT }, 'Janus Protect API started');
 }
 
 void bootstrap();

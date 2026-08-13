@@ -1,7 +1,9 @@
 .DS_Store
 .env
 .env.*
+.infra.env
 !.env.example
+!deploy/*.example
 .next/
 .turbo/
 coverage/
@@ -9,5 +11,6 @@ dist/
 node_modules/
 vendor/
 packages/database/src/generated/
-docs/
+docs/*
+!docs/deployment.md
 *.log
