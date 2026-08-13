@@ -175,6 +175,44 @@ describe('BasicProtectionEngine', () => {
       }),
     ).rejects.toMatchObject({ code: 'ARCHIVE_RESERVED_PATH' });
   });
+
+  it('cannot disable licensing enforcement by disabling the integrity runtime', async () => {
+    const source = await inspectWordPressArchive(
+      await zip({ 'sample/sample.php': '<?php\n/** Plugin Name: Sample\n * Version: 1.0.0 */' }),
+    );
+    const { privateKey } = generateKeyPairSync('ed25519');
+    const signingPrivateKey = privateKey
+      .export({ format: 'der', type: 'pkcs8' })
+      .toString('base64');
+    const result = await new BasicProtectionEngine().protect({
+      ...source,
+      level: ProtectionLevel.BASIC,
+      version: '1.0.1',
+      signingPrivateKey,
+      runtimeInjection: false,
+      integrity: false,
+      obfuscation: false,
+      licensing: {
+        apiUrl: 'https://licenses.example.com/api/v1',
+        projectId: 'f231f93e-80fa-4821-96ba-cd5ffcab283e',
+        projectType: ProjectType.PLUGIN,
+        publicKey: createPublicKey(privateKey)
+          .export({ format: 'der', type: 'spki' })
+          .toString('base64'),
+      },
+      transformPhp: (files) => Promise.resolve({ files, report: {} }),
+    });
+    const output = await inspectWordPressArchive(result.archive);
+    const paths = new Set(output.files.map((file) => file.path));
+    const entry = output.files
+      .find((file) => file.path === 'sample/sample.php')
+      ?.data.toString('utf8');
+
+    expect(paths.has('sample/janus-protect/license.php')).toBe(true);
+    expect(paths.has('sample/janus-protect/runtime.php')).toBe(false);
+    expect(entry).toContain('janus-protect/license.php');
+    expect(entry).toContain('janus_protect_license_checks');
+  });
 });
 
 describe('matchesExcludedPath', () => {

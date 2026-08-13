@@ -186,13 +186,20 @@ export class BasicProtectionEngine implements ProtectionEngine {
     const licensePath = `${input.analysis.rootDirectory}/janus-protect/license.php`;
 
     updateWordPressVersion(files, input.analysis, input.version);
-    if (input.runtimeInjection) {
-      injectRuntimeBootstrap(files, input.analysis.entryFile, input.licensing);
-      files.push({
-        path: runtimePath,
-        data: Buffer.from(runtimeSource(input.version), 'utf8'),
-        mode: 0o100644,
-      });
+    if (input.runtimeInjection || input.licensing) {
+      injectRuntimeBootstrap(
+        files,
+        input.analysis.entryFile,
+        input.runtimeInjection,
+        input.licensing,
+      );
+      if (input.runtimeInjection) {
+        files.push({
+          path: runtimePath,
+          data: Buffer.from(runtimeSource(input.version), 'utf8'),
+          mode: 0o100644,
+        });
+      }
       if (input.licensing) {
         files.push({
           path: licensePath,
@@ -429,6 +436,7 @@ function detectWordPressEntry(
 function injectRuntimeBootstrap(
   files: ArchiveFile[],
   entryPath: string,
+  runtimeInjection: boolean,
   licensing?: ProtectionInput['licensing'],
 ): void {
   const entry = files.find((file) => file.path === entryPath);
@@ -436,11 +444,17 @@ function injectRuntimeBootstrap(
   const source = entry.data.toString('utf8');
   const marker = "require_once __DIR__ . '/janus-protect/runtime.php';";
   const licenseMarker = "require_once __DIR__ . '/janus-protect/license.php';";
-  if (source.includes(marker) && (!licensing || source.includes(licenseMarker))) return;
+  if (
+    (!runtimeInjection || source.includes(marker)) &&
+    (!licensing || source.includes(licenseMarker))
+  )
+    return;
   const enforcement = licensing
     ? `if (empty($GLOBALS['janus_protect_license_checks']['${licensing.projectId}']) || !is_callable($GLOBALS['janus_protect_license_checks']['${licensing.projectId}']) || !(bool) call_user_func($GLOBALS['janus_protect_license_checks']['${licensing.projectId}'])) { return; }`
     : '';
-  const bootstrap = licensing ? `${marker}\n${licenseMarker}\n${enforcement}` : marker;
+  const bootstrap = [runtimeInjection ? marker : '', licensing ? licenseMarker : '', enforcement]
+    .filter(Boolean)
+    .join('\n');
   const transformed = source.replace(/<\?php\s*/, (opening) => `${opening}\n${bootstrap}\n`);
   if (transformed === source) throw new Error('WordPress entry file does not begin with PHP.');
   entry.data = Buffer.from(transformed, 'utf8');
