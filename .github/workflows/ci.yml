@@ -47,6 +47,9 @@ jobs:
         working-directory: services/php-transformer
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      - name: Generate Prisma Client
+        run: pnpm db:generate
+
       - name: Check formatting
         run: pnpm format:check
 
