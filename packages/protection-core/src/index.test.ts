@@ -126,6 +126,7 @@ describe('BasicProtectionEngine', () => {
     expect(licensing).toContain('Protected products');
     expect(licensing).toContain('All protected products');
     expect(licensing).toContain('.jp-license a:focus,.jp-license button:focus');
+    expect(licensing).toContain('.jp-product:focus,.jp-product:active,.jp-product:visited');
     expect(manifest).toBeDefined();
     expect(signatureFile).toBeDefined();
 
