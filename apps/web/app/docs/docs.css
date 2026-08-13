@@ -98,19 +98,6 @@
   white-space: nowrap;
 }
 
-.docs-mark {
-  display: grid;
-  place-items: center;
-  width: 29px;
-  height: 29px;
-  border: 1px solid #3f3f46;
-  border-radius: 8px;
-  background: linear-gradient(145deg, #202923, #111311);
-  color: #a7f3d0;
-  font-size: 13px;
-  box-shadow: inset 0 1px rgb(255 255 255 / 6%);
-}
-
 .docs-top-nav {
   display: flex;
   align-items: center;
@@ -979,10 +966,6 @@
 .docs-search-results strong {
   font-size: 12px;
   font-weight: 550;
-}
-.docs-search-results small {
-  color: #63636c;
-  font-size: 10px;
 }
 .docs-enter {
   margin-inline-start: auto;

@@ -79,8 +79,8 @@ export function DocsClient({ version }: { version: string }) {
   const results = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return navigation;
-    return navigation.filter((item) => `${item.en} ${item.fa}`.toLowerCase().includes(normalized));
-  }, [query]);
+    return navigation.filter((item) => item[locale].toLowerCase().includes(normalized));
+  }, [locale, query]);
 
   const goTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -104,7 +104,6 @@ export function DocsClient({ version }: { version: string }) {
             <MenuIcon />
           </button>
           <a href="/" className="docs-brand" aria-label="Janus Protect home">
-            <span className="docs-mark">J</span>
             <span>Janus Protect</span>
           </a>
           <nav className="docs-top-nav" aria-label="Primary navigation">
@@ -240,7 +239,6 @@ export function DocsClient({ version }: { version: string }) {
                   </span>
                   <span>
                     <strong>{item[locale]}</strong>
-                    <small>{item[fa ? 'en' : 'fa']}</small>
                   </span>
                   <span className="docs-enter">↵</span>
                 </button>
@@ -661,8 +659,8 @@ function Deployment({ fa }: { fa: boolean }) {
     <DocSection id="deployment" title={fa ? 'استقرار روی Ubuntu' : 'Ubuntu deployment'}>
       <p>
         {fa
-          ? 'تعریف production داخل repository نگهداری می شود، اما secretها هرگز commit نمی شوند. setup عمومی به Nginx یا Cloudflare وابسته نیست: وب و API روی loopback اجرا می شوند و reverse proxy انتخابی در لایه بیرونی قرار می گیرد.'
-          : 'Production definitions live in the repository while real secrets never do. The base setup is independent of Nginx or Cloudflare: web and API bind to loopback and the chosen reverse proxy sits outside the application stack.'}
+          ? 'فایل های استقرار داخل repository نگهداری می شوند، اما secretهای واقعی نباید commit شوند. وب روی پورت 3100 و API روی پورت 4100 فقط در loopback در دسترس هستند. برای انتشار عمومی باید یکی از روش های زیر را انتخاب کنید؛ اجرای هم زمان هر دو لازم نیست.'
+          : 'Deployment definitions live in the repository, but real secrets must never be committed. The web app on port 3100 and API on port 4100 listen on loopback only. Choose one of the public routing options below; running both is unnecessary.'}
       </p>
       <CodeBlock
         title={fa ? 'راه اندازی سرور تازه' : 'Bootstrap a fresh server'}
@@ -675,17 +673,27 @@ function Deployment({ fa }: { fa: boolean }) {
       </p>
       <CodeBlock
         title={fa ? 'استقرار دستی یک tag' : 'Deploy a tag manually'}
-        code={`scripts/deploy.sh --ref v0.5.0`}
+        code={`scripts/deploy.sh --ref vX.Y.Z`}
       />
       <h3>{fa ? 'Cloudflare Tunnel' : 'Cloudflare Tunnel'}</h3>
       <p>
         {fa
-          ? 'در سرور فعلی، Cloudflare Tunnel مسیر /api را به پورت 4100 و باقی درخواست های janus.khorami.dev را به وب روی 3100 می فرستد. این تنظیم مخصوص همان سرور است و setup عمومی آن را بدون اجازه تغییر نمی دهد.'
-          : 'On the current server, Cloudflare Tunnel sends /api traffic to port 4100 and all other janus.khorami.dev requests to the web app on 3100. This is server-specific and the generic setup does not alter it implicitly.'}
+          ? 'اگر از Tunnel استفاده می کنید، رکورد DNS و TLS در Cloudflare مدیریت می شوند. مسیرهای API باید قبل از مسیر عمومی وب قرار بگیرند. نام میزبان زیر فقط نمونه است و باید با دامنه خودتان جایگزین شود.'
+          : 'With a Tunnel, Cloudflare manages the DNS record and TLS edge. API routes must appear before the web catch-all. The hostname below is only an example and must be replaced with your own domain.'}
       </p>
       <CodeBlock
         language="yaml"
-        code={`ingress:\n  - hostname: janus.example.com\n    path: ^/api/.*\n    service: http://127.0.0.1:4100\n  - hostname: janus.example.com\n    service: http://127.0.0.1:3100`}
+        code={`ingress:\n  - hostname: protect.example.com\n    path: ^/api(?:/.*)?$\n    service: http://127.0.0.1:4100\n  - hostname: protect.example.com\n    service: http://127.0.0.1:3100\n  - service: http_status:404`}
+      />
+      <h3>{fa ? 'Nginx' : 'Nginx'}</h3>
+      <p>
+        {fa
+          ? 'اگر سرور مستقیما از اینترنت در دسترس است، Nginx می تواند TLS و reverse proxy را مدیریت کند. ابتدا گواهی معتبر برای دامنه خودتان تنظیم کنید، سپس مسیر API را جدا از وب به پورت درست بفرستید.'
+          : 'When the server is directly reachable from the internet, Nginx can terminate TLS and act as the reverse proxy. Configure a valid certificate for your domain, then route the API separately from the web app.'}
+      </p>
+      <CodeBlock
+        language="nginx"
+        code={`server {\n  listen 443 ssl;\n  server_name protect.example.com;\n\n  # Configure ssl_certificate and ssl_certificate_key here.\n\n  location /api/ {\n    proxy_pass http://127.0.0.1:4100;\n    proxy_set_header Host $host;\n    proxy_set_header X-Forwarded-Proto $scheme;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n  }\n\n  location / {\n    proxy_pass http://127.0.0.1:3100;\n    proxy_set_header Host $host;\n    proxy_set_header X-Forwarded-Proto $scheme;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n  }\n}`}
       />
     </DocSection>
   );
@@ -764,14 +772,14 @@ function Security({ fa }: { fa: boolean }) {
                 'ورودی HTTP با schema مشترک Zod اعتبارسنجی می شود.',
                 'rate limit احراز هویت و licensing با Redis اعمال می شود.',
                 'secretها در structured log redacted می شوند.',
-                'PostgreSQL، Redis، MinIO، API و SMTP production روی localhost محدود هستند.',
+                'PostgreSQL، Redis، MinIO و API در تنظیم production روی localhost محدود هستند.',
                 'runtime امضای artifact را بررسی می کند، اما خود فایل PHP برای مدیر سرور قابل تغییر است.',
               ]
             : [
                 'HTTP input is validated with shared Zod schemas.',
                 'Authentication and licensing rate limits are backed by Redis.',
                 'Known secret fields are redacted from structured logs.',
-                'Production PostgreSQL, Redis, MinIO, API and SMTP bind to localhost.',
+                'Production PostgreSQL, Redis, MinIO and API bind to localhost.',
                 'The runtime checks artifact signatures, but PHP files remain editable by the server owner.',
               ]
         }
