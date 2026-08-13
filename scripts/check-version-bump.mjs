@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const base = process.env.VERSION_BASE_REF || 'origin/main';
 const productionPattern =
-  /^(apps|deploy|packages|services|sdks)\/|^scripts\/(deploy|setup-server)\.sh$|^compose\.yaml$|^pnpm-lock\.yaml$/;
+  /^(apps|deploy|packages|services|sdks)\/|^scripts\/(backup-database|deploy|setup-server)\.sh$|^compose\.yaml$|^pnpm-lock\.yaml$/;
 const repositoryRoot = dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
 
 function git(args) {

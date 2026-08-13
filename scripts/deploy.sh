@@ -74,6 +74,13 @@ rollback() {
 trap rollback ERR
 
 docker compose --env-file .infra.env -f deploy/compose.prod.yml up -d
+postgres_deadline=$((SECONDS + HEALTH_TIMEOUT_SECONDS))
+until docker compose --env-file .infra.env -f deploy/compose.prod.yml exec -T postgres \
+  pg_isready --username janus --dbname janus >/dev/null; do
+  (( SECONDS < postgres_deadline )) || { echo 'PostgreSQL readiness check timed out.' >&2; false; }
+  sleep 2
+done
+scripts/backup-database.sh
 pnpm install --frozen-lockfile
 composer install --working-dir=services/php-transformer --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader
 pnpm db:generate

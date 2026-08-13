@@ -46,4 +46,16 @@ mode `0600`:
 ## Continuous integration
 
 GitHub Actions runs formatting, linting, type-checking, tests and a full production build for every
-push and pull request targeting `main`. CI verifies a revision; it does not deploy production.
+push and pull request targeting `main`.
+
+To publish the version already declared in all `package.json` files, run from a clean and synchronized
+`main` branch:
+
+```bash
+pnpm release
+```
+
+This runs the complete local check and pushes an annotated version tag. GitHub Actions independently
+verifies the tag, creates a PostgreSQL backup, deploys that exact revision, checks the internal and
+public application, and publishes generated GitHub release notes. Normal pushes never deploy
+production.

@@ -1,0 +1,100 @@
+name: Release and deploy
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out tagged revision
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches package version
+        run: test "${GITHUB_REF_NAME}" = "v$(node -p "require('./package.json').version")"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.0
+          cache: pnpm
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install PHP transformer dependencies
+        working-directory: services/php-transformer
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Generate Prisma Client
+        run: pnpm db:generate
+
+      - name: Verify release build
+        run: pnpm check
+
+  deploy:
+    name: Deploy production
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://janus.khorami.dev
+
+    steps:
+      - name: Configure deployment SSH key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST_KEY: ${{ secrets.DEPLOY_HOST_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/janus_deploy
+          printf '%s\n' "$DEPLOY_HOST_KEY" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/janus_deploy ~/.ssh/known_hosts
+
+      - name: Back up and deploy tagged release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh -i ~/.ssh/janus_deploy -o IdentitiesOnly=yes "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "cd /opt/janus-protect && git fetch --tags origin && git show '${GITHUB_REF_NAME}:scripts/deploy.sh' > /tmp/janus-deploy.sh && chmod 700 /tmp/janus-deploy.sh && JANUS_ROOT=/opt/janus-protect /tmp/janus-deploy.sh --ref '${GITHUB_REF_NAME}'"
+
+      - name: Verify public application
+        run: |
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 https://janus.khorami.dev/ >/dev/null
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 https://janus.khorami.dev/health/ready >/dev/null
+
+  publish:
+    name: Publish GitHub Release
+    needs: deploy
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Create release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --verify-tag --generate-notes --title "Janus Protect ${GITHUB_REF_NAME}"

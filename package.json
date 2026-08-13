@@ -21,6 +21,7 @@
     "version:check": "node scripts/check-version-bump.mjs",
     "hooks:install": "git config core.hooksPath .githooks",
     "deploy": "scripts/deploy.sh",
+    "release": "scripts/release.sh",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
