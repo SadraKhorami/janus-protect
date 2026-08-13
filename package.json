@@ -1,6 +1,6 @@
 {
   "name": "janus-protect",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "private": true,
   "packageManager": "pnpm@10.26.0",
   "engines": {

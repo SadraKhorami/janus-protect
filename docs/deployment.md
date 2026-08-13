@@ -24,7 +24,7 @@ scripts/deploy.sh --ref main
 You can also deploy a specific version tag manually:
 
 ```bash
-scripts/deploy.sh --ref v0.5.2
+scripts/deploy.sh --ref v0.6.0
 ```
 
 ## What deployment does
