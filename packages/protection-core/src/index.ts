@@ -474,8 +474,9 @@ function updateWordPressVersion(
   const header = files.find((file) => file.path === headerPath);
   if (!header) throw new Error('WordPress version header file is missing.');
   const source = header.data.toString('utf8');
-  const transformed = source.replace(/(^|\n)(\s*\*?\s*Version\s*:\s*)[^\r\n]+/i, `$1$2${version}`);
-  if (transformed === source) throw new Error('WordPress version header is missing.');
+  const versionHeader = /(^|\n)(\s*\*?\s*Version\s*:\s*)[^\r\n]+/i;
+  if (!versionHeader.test(source)) throw new Error('WordPress version header is missing.');
+  const transformed = source.replace(versionHeader, `$1$2${version}`);
   header.data = Buffer.from(transformed, 'utf8');
 }
 

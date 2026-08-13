@@ -2,7 +2,8 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['src/main.ts'],
-  format: ['esm'],
+  format: ['cjs'],
+  platform: 'node',
   sourcemap: true,
   clean: true,
   target: 'es2022',
