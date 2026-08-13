@@ -34,10 +34,10 @@ export default function HomePage() {
               Create an account
             </Link>
             <a
-              href="http://localhost:4000/api/docs"
+              href="/docs"
               className="rounded-lg border border-white/15 px-5 py-3 text-sm font-semibold text-white/85 transition hover:border-white/30 hover:bg-white/5"
             >
-              View API docs
+              Read documentation
             </a>
           </div>
         </div>
