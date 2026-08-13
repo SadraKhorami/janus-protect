@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
@@ -64,3 +64,40 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  deploy:
+    name: Deploy main to production
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: https://janus.khorami.dev
+
+    steps:
+      - name: Configure deployment SSH key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST_KEY: ${{ secrets.DEPLOY_HOST_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/janus_deploy
+          printf '%s\n' "$DEPLOY_HOST_KEY" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/janus_deploy ~/.ssh/known_hosts
+
+      - name: Back up and deploy verified commit
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh -i ~/.ssh/janus_deploy -o IdentitiesOnly=yes "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "cd /opt/janus-protect && git fetch origin main --tags && git show '${GITHUB_SHA}:scripts/deploy.sh' > /tmp/janus-deploy.sh && chmod 700 /tmp/janus-deploy.sh && JANUS_ROOT=/opt/janus-protect /tmp/janus-deploy.sh --ref '${GITHUB_SHA}'"
+
+      - name: Verify public application
+        run: |
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 https://janus.khorami.dev/ >/dev/null
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 https://janus.khorami.dev/health/ready >/dev/null

@@ -23,4 +23,4 @@ pnpm check
 git tag --annotate "${tag}" --message "Janus Protect ${tag}"
 git push origin "${tag}"
 
-echo "${tag} pushed. GitHub will verify, back up, deploy and publish the release."
+echo "${tag} pushed. GitHub will verify it and publish the release."
