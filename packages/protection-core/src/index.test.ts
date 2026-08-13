@@ -125,6 +125,7 @@ describe('BasicProtectionEngine', () => {
     expect(licensing).toContain("$GLOBALS['janus_protect_products']");
     expect(licensing).toContain('Protected products');
     expect(licensing).toContain('All protected products');
+    expect(licensing).toContain('.jp-license a:focus,.jp-license button:focus');
     expect(manifest).toBeDefined();
     expect(signatureFile).toBeDefined();
 
