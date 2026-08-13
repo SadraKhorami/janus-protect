@@ -25,6 +25,7 @@ It is organized as a modular monolith and exposes a versioned HTTP API for autom
 - Signed integrity manifests and protected build artifacts
 - License keys with activation limits, expiration, and normalized site binding
 - Signed seven-day offline leases with daily renewal
+- Fail-closed runtime enforcement that keeps protected product code unloaded without a valid lease
 - License UI under **Settings → License** for plugins and **Appearance → License** for themes
 - Organization-scoped access with OWNER, ADMIN, DEVELOPER, and VIEWER roles
 - Automated CI, database backup, migration, build, health check, and deployment from `main`
