@@ -768,6 +768,31 @@
   color: #93c5fd;
 }
 
+.docs-api-table .method.delete {
+  color: #fca5a5;
+}
+
+.docs-api-table .method.patch,
+.docs-api-table .method.put {
+  color: #fcd34d;
+}
+
+.docs-api-steps {
+  margin: 20px 0 28px;
+  padding-inline-start: 24px;
+  color: #a1a1aa;
+}
+
+.docs-api-steps li {
+  margin: 9px 0;
+  padding-inline-start: 6px;
+}
+
+.docs-api-steps li::marker {
+  color: #6ee7b7;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
 .docs-release-flow {
   display: flex;
   align-items: center;

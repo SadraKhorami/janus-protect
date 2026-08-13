@@ -110,7 +110,9 @@ export function DocsClient({ version }: { version: string }) {
             <a href="/docs" className="active">
               {fa ? 'مستندات' : 'Docs'}
             </a>
-            <a href="/api/docs">API</a>
+            <a href="/docs#api" onClick={() => goTo('api')}>
+              API
+            </a>
             <a
               href="https://github.com/SadraKhorami/janus-protect"
               target="_blank"
@@ -526,64 +528,172 @@ function Licensing({ fa }: { fa: boolean }) {
 }
 
 function ApiReference({ fa }: { fa: boolean }) {
-  const rows = [
+  const authRows = [
+    ['POST', '/auth/register', 'Public', 'email, username, password'],
+    ['POST', '/auth/verify-email', 'Public', 'email, code'],
+    ['POST', '/auth/resend-verification', 'Public', 'email'],
+    ['POST', '/auth/login', 'Public', 'identifier, password'],
+    ['POST', '/auth/refresh', 'Cookie', '—'],
+    ['POST', '/auth/logout', 'Cookie', '—'],
+    ['POST', '/auth/forgot-password', 'Public', 'email'],
+    ['POST', '/auth/reset-password', 'Public', 'token, password'],
+    ['GET', '/auth/me', 'Bearer', '—'],
+  ];
+  const projectRows = [
+    ['POST', '/projects', 'Bearer', 'name, slug, description?'],
+    ['GET', '/projects', 'Bearer', '—'],
+    ['GET', '/projects/{projectId}', 'Bearer', 'projectId: UUID'],
+    ['PATCH', '/projects/{projectId}', 'Bearer', 'projectId + changed fields'],
+    ['DELETE', '/projects/{projectId}', 'Bearer', 'projectId: UUID'],
+    ['POST', '/projects/{projectId}/source/upload', 'Bearer', 'projectId + file (ZIP)'],
+    ['GET', '/projects/{projectId}/protection', 'Bearer', 'projectId: UUID'],
+    ['PUT', '/projects/{projectId}/protection', 'Bearer', 'projectId + protection profile'],
+    ['POST', '/projects/{projectId}/builds', 'Bearer', 'projectId + version, protectionLevel?'],
+    ['GET', '/projects/{projectId}/builds/{buildId}', 'Bearer', 'projectId + buildId'],
     [
-      'POST',
-      '/api/v1/auth/register',
-      fa ? 'ساخت حساب و organization' : 'Create account and organization',
+      'GET',
+      '/projects/{projectId}/builds/{buildId}/artifacts/{artifactId}',
+      'Bearer',
+      'projectId + buildId + artifactId',
     ],
-    ['POST', '/api/v1/auth/login', fa ? 'ورود و شروع session' : 'Authenticate and start a session'],
-    ['GET', '/api/v1/auth/me', fa ? 'حساب و نقش فعال' : 'Current account and role'],
-    ['POST', '/api/v1/projects', fa ? 'ساخت پروژه WordPress' : 'Create a WordPress project'],
-    [
-      'POST',
-      '/api/v1/projects/:id/source/upload',
-      fa ? 'ثبت revision جدید ZIP' : 'Upload a new ZIP revision',
-    ],
-    [
-      'POST',
-      '/api/v1/projects/:id/builds',
-      fa ? 'صف کردن build نسخه دار' : 'Queue a versioned build',
-    ],
-    ['POST', '/api/v1/projects/:id/licenses', fa ? 'صدور لایسنس' : 'Issue a license'],
-    ['POST', '/api/v1/licenses/activate', fa ? 'فعال سازی عمومی' : 'Public license activation'],
-    [
-      'POST',
-      '/api/v1/licenses/validate',
-      fa ? 'تمدید و اعتبارسنجی lease' : 'Validate and renew a lease',
-    ],
+  ];
+  const licenseRows = [
+    ['POST', '/projects/{projectId}/licenses', 'Bearer', 'projectId + license options'],
+    ['GET', '/projects/{projectId}/licenses', 'Bearer', 'projectId: UUID'],
+    ['POST', '/projects/{projectId}/licenses/{licenseId}/revoke', 'Bearer', 'projectId + licenseId'],
+    ['POST', '/licenses/activate', 'Public', 'projectId, key, siteUrl'],
+    ['POST', '/licenses/validate', 'Public', 'projectId, activationToken, siteUrl'],
+    ['POST', '/licenses/deactivate', 'Public', 'projectId, activationToken, siteUrl'],
   ];
   return (
     <DocSection id="api" title={fa ? 'مرجع API' : 'API reference'}>
       <p>
         {fa
-          ? 'API پایدار زیر /api/v1 قرار دارد و Swagger در /api/docs سرو می شود. endpointهای پروژه bearer token می خواهند و تمام queryها با organization داخل token محدود می شوند.'
-          : 'Stable endpoints live under /api/v1 and Swagger is served at /api/docs. Project endpoints require a bearer token and all queries are constrained by the organization encoded in that token.'}
+          ? 'این بخش مرجع اصلی API است. تمام مسیرهای جدول نسبت به آدرس پایه زیر نوشته شده اند. درخواست های مدیریتی به Bearer Token نیاز دارند؛ مسیرهای عمومی لایسنس برای SDK وردپرس هستند.'
+          : 'This section is the canonical API reference. Every path below is relative to the base URL. Management requests require a bearer token; public license routes are intended for the WordPress SDK.'}
       </p>
-      <div className="docs-table-wrap">
-        <table className="docs-api-table">
-          <thead>
-            <tr>
-              <th>{fa ? 'متد' : 'Method'}</th>
-              <th>{fa ? 'مسیر' : 'Path'}</th>
-              <th>{fa ? 'کاربرد' : 'Purpose'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(([method = '', path = '', purpose = '']) => (
-              <tr key={path}>
-                <td>
-                  <span className={`method ${method.toLowerCase()}`}>{method}</span>
-                </td>
-                <td>
-                  <code>{path}</code>
-                </td>
-                <td>{purpose}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <CodeBlock code="https://janus.khorami.dev/api/v1" />
+
+      <h3>{fa ? 'احراز هویت در Postman' : 'Authentication in Postman'}</h3>
+      <ol className="docs-api-steps">
+        <li>
+          {fa
+            ? 'در Collection یک متغیر با نام baseUrl و مقدار آدرس بالا بسازید.'
+            : 'Create a collection variable named baseUrl with the value above.'}
+        </li>
+        <li>
+          {fa
+            ? 'درخواست login را با No Auth ارسال کنید و accessToken پاسخ را در متغیر accessToken قرار دهید.'
+            : 'Send the login request with No Auth and save its accessToken response as accessToken.'}
+        </li>
+        <li>
+          {fa
+            ? 'Authorization کالکشن را روی Bearer Token و مقدار {{accessToken}} بگذارید. مسیرهای Public را روی No Auth قرار دهید.'
+            : 'Set collection Authorization to Bearer Token with {{accessToken}}. Override Public routes with No Auth.'}
+        </li>
+      </ol>
+      <CodeBlock
+        title="POST {{baseUrl}}/auth/login"
+        language="json"
+        code={`{
+  "identifier": "admin@example.com",
+  "password": "your-password"
+}`}
+      />
+      <p>
+        {fa
+          ? 'Postman کوکی refresh را خودکار نگه می دارد. access token در body پاسخ login یا refresh برمی گردد و برای مسیرهای Bearer استفاده می شود.'
+          : 'Postman retains the refresh cookie automatically. Login and refresh return the access token in the response body for Bearer requests.'}
+      </p>
+
+      <ApiTable title={fa ? 'حساب و نشست' : 'Accounts and sessions'} rows={authRows} fa={fa} />
+      <ApiTable title={fa ? 'پروژه، سورس و build' : 'Projects, source and builds'} rows={projectRows} fa={fa} />
+      <ApiTable title={fa ? 'لایسنس' : 'Licensing'} rows={licenseRows} fa={fa} />
+
+      <h3>{fa ? 'Bodyهای اصلی' : 'Primary request bodies'}</h3>
+      <CodeBlock
+        title={fa ? 'ساخت پروژه' : 'Create a project'}
+        language="json"
+        code={`POST {{baseUrl}}/projects
+{
+  "name": "Example Plugin",
+  "slug": "example-plugin",
+  "description": "Optional project description"
+}`}
+      />
+      <CodeBlock
+        title={fa ? 'تنظیم محافظت' : 'Configure protection'}
+        language="json"
+        code={`PUT {{baseUrl}}/projects/{projectId}/protection
+{
+  "level": "STRONG",
+  "runtimeInjection": true,
+  "integrity": true,
+  "obfuscation": true,
+  "excludePaths": ["vendor/**"]
+}`}
+      />
+      <CodeBlock
+        title={fa ? 'ساخت build' : 'Create a build'}
+        language="json"
+        code={`POST {{baseUrl}}/projects/{projectId}/builds
+{
+  "version": "1.0.0",
+  "protectionLevel": "STRONG"
+}`}
+      />
+      <CodeBlock
+        title={fa ? 'صدور لایسنس' : 'Issue a license'}
+        language="json"
+        code={`POST {{baseUrl}}/projects/{projectId}/licenses
+{
+  "customerEmail": "customer@example.com",
+  "maxActivations": 1,
+  "expiresAt": null
+}`}
+      />
+
+      <h3>{fa ? 'آپلود ZIP' : 'Upload a ZIP'}</h3>
+      <p>
+        {fa
+          ? 'در Postman نوع Body را form-data انتخاب کنید، کلید file را از نوع File بسازید و ZIP افزونه یا قالب را انتخاب کنید. حداکثر حجم فایل 25MB است.'
+          : 'In Postman choose form-data, add a file field with type File, and select the plugin or theme ZIP. The maximum upload size is 25MB.'}
+      </p>
+      <CodeBlock
+        code={`POST {{baseUrl}}/projects/{projectId}/source/upload
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data
+
+file: <plugin-or-theme.zip>`}
+      />
+
+      <h3>{fa ? 'قرارداد فیلدها' : 'Field contract'}</h3>
+      <BulletList
+        items={
+          fa
+            ? [
+                'projectId، buildId، artifactId و licenseId باید UUID معتبر باشند.',
+                'password بین 12 تا 128 کاراکتر و code یک عدد شش رقمی است.',
+                'version باید Semantic Version مانند 1.2.0 باشد.',
+                'level و protectionLevel یکی از BASIC، STANDARD یا STRONG هستند.',
+                'siteUrl باید URL کامل باشد. expiresAt نیز ISO 8601 یا null است.',
+                'کلید خام لایسنس فقط در پاسخ صدور لایسنس نمایش داده می شود؛ آن را همان زمان ذخیره کنید.',
+              ]
+            : [
+                'projectId, buildId, artifactId and licenseId must be valid UUID values.',
+                'password is 12–128 characters and code is exactly six digits.',
+                'version must be a semantic version such as 1.2.0.',
+                'level and protectionLevel accept BASIC, STANDARD or STRONG.',
+                'siteUrl must be an absolute URL; expiresAt is ISO 8601 or null.',
+                'The raw license key appears only in the issue response; store it immediately.',
+              ]
+        }
+      />
+
+      <h3>{fa ? 'Health و پاسخ خطا' : 'Health and errors'}</h3>
+      <p>
+        <code>GET /health/live</code> · <code>GET /health/ready</code>
+      </p>
       <h3>{fa ? 'قرارداد خطا' : 'Error contract'}</h3>
       <CodeBlock
         language="json"
@@ -595,6 +705,48 @@ function ApiReference({ fa }: { fa: boolean }) {
           : 'Keep requestId when reporting an error; it connects the API response to structured logs and audit context. /health/live and /health/ready sit outside the versioned prefix.'}
       </p>
     </DocSection>
+  );
+}
+
+function ApiTable({
+  title,
+  rows,
+  fa,
+}: {
+  title: string;
+  rows: string[][];
+  fa: boolean;
+}) {
+  return (
+    <>
+      <h3>{title}</h3>
+      <div className="docs-table-wrap">
+        <table className="docs-api-table">
+          <thead>
+            <tr>
+              <th>{fa ? 'متد' : 'Method'}</th>
+              <th>{fa ? 'مسیر' : 'Path'}</th>
+              <th>{fa ? 'دسترسی' : 'Auth'}</th>
+              <th>{fa ? 'ورودی' : 'Input'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(([method = '', path = '', auth = '', input = '']) => (
+              <tr key={`${method}-${path}`}>
+                <td>
+                  <span className={`method ${method.toLowerCase()}`}>{method}</span>
+                </td>
+                <td>
+                  <code>/api/v1{path}</code>
+                </td>
+                <td>{auth}</td>
+                <td>{input}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
