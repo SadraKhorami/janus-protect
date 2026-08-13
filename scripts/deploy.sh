@@ -61,6 +61,7 @@ fi
 
 rollback() {
   local exit_code=$?
+  local pm2_config=deploy/ecosystem.config.cjs
   trap - ERR
   echo "Deployment failed; restoring ${PREVIOUS_COMMIT}." >&2
   git checkout --detach "${PREVIOUS_COMMIT}" || true
@@ -68,7 +69,8 @@ rollback() {
   pnpm --filter @janus/api build || true
   pnpm --filter @janus/worker-build build || true
   NODE_OPTIONS=--max-old-space-size=1536 pnpm --filter @janus/web build || true
-  JANUS_ROOT="${JANUS_ROOT}" pm2 startOrReload deploy/ecosystem.config.cjs --update-env || true
+  [[ -f ${pm2_config} ]] || pm2_config=ecosystem.config.cjs
+  JANUS_ROOT="${JANUS_ROOT}" pm2 startOrReload "${pm2_config}" --update-env || true
   exit "${exit_code}"
 }
 trap rollback ERR
@@ -88,14 +90,14 @@ pnpm db:migrate
 pnpm --filter @janus/api build
 pnpm --filter @janus/worker-build build
 
-node -e "const fs=require('node:fs'); require('dotenv').config({path:'.env'}); if (!process.env.NEXT_PUBLIC_API_URL) throw new Error('NEXT_PUBLIC_API_URL is required'); fs.writeFileSync('apps/web/.env.production', 'NEXT_PUBLIC_API_URL=' + process.env.NEXT_PUBLIC_API_URL + '\\n', {mode:0o600})"
+pnpm exec dotenv -e .env -- node -e "const fs=require('node:fs'); if (!process.env.NEXT_PUBLIC_API_URL) throw new Error('NEXT_PUBLIC_API_URL is required'); fs.writeFileSync('apps/web/.env.production', 'NEXT_PUBLIC_API_URL=' + process.env.NEXT_PUBLIC_API_URL + '\\n', {mode:0o600})"
 chmod 600 apps/web/.env.production
 NODE_OPTIONS=--max-old-space-size=1536 pnpm --filter @janus/web build
 
 JANUS_ROOT="${JANUS_ROOT}" pm2 startOrReload deploy/ecosystem.config.cjs --update-env
 pm2 save
 
-api_port=$(node -e "require('dotenv').config({path:'.env'}); process.stdout.write(process.env.API_PORT || '4100')")
+api_port=$(pnpm exec dotenv -e .env -- node -e "process.stdout.write(process.env.API_PORT || '4100')")
 deadline=$((SECONDS + HEALTH_TIMEOUT_SECONDS))
 until curl --fail --silent --show-error "http://127.0.0.1:${api_port}/health/ready" >/dev/null; do
   (( SECONDS < deadline )) || { echo 'API readiness check timed out.' >&2; false; }
