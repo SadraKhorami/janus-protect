@@ -108,10 +108,14 @@ describe('BasicProtectionEngine', () => {
     expect(entry).toContain('Version: 1.2.3');
     expect(entry).toContain("require_once __DIR__ . '/janus-protect/runtime.php';");
     expect(entry).toContain("require_once __DIR__ . '/janus-protect/license.php';");
+    expect(entry).toContain(
+      "empty($GLOBALS['janus_protect_license_checks']['f231f93e-80fa-4821-96ba-cd5ffcab283e'])",
+    );
     expect(runtime).toContain("do_action('janus_protect_integrity_failed'");
     expect(licensing).toContain("add_options_page(__('License'");
     expect(licensing).toContain('wordpress-sdk/0.4');
     expect(licensing).toContain("do_action('janus_protect_license_invalid'");
+    expect(licensing).toContain("$GLOBALS['janus_protect_license_checks']");
     expect(manifest).toBeDefined();
     expect(signatureFile).toBeDefined();
 

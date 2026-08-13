@@ -187,7 +187,7 @@ export class BasicProtectionEngine implements ProtectionEngine {
 
     updateWordPressVersion(files, input.analysis, input.version);
     if (input.runtimeInjection) {
-      injectRuntimeBootstrap(files, input.analysis.entryFile, Boolean(input.licensing));
+      injectRuntimeBootstrap(files, input.analysis.entryFile, input.licensing);
       files.push({
         path: runtimePath,
         data: Buffer.from(runtimeSource(input.version), 'utf8'),
@@ -426,14 +426,21 @@ function detectWordPressEntry(
   );
 }
 
-function injectRuntimeBootstrap(files: ArchiveFile[], entryPath: string, licensing = false): void {
+function injectRuntimeBootstrap(
+  files: ArchiveFile[],
+  entryPath: string,
+  licensing?: ProtectionInput['licensing'],
+): void {
   const entry = files.find((file) => file.path === entryPath);
   if (!entry) throw new Error('WordPress entry file is missing.');
   const source = entry.data.toString('utf8');
   const marker = "require_once __DIR__ . '/janus-protect/runtime.php';";
   const licenseMarker = "require_once __DIR__ . '/janus-protect/license.php';";
   if (source.includes(marker) && (!licensing || source.includes(licenseMarker))) return;
-  const bootstrap = licensing ? `${marker}\n${licenseMarker}` : marker;
+  const enforcement = licensing
+    ? `if (empty($GLOBALS['janus_protect_license_checks']['${licensing.projectId}']) || !is_callable($GLOBALS['janus_protect_license_checks']['${licensing.projectId}']) || !(bool) call_user_func($GLOBALS['janus_protect_license_checks']['${licensing.projectId}'])) { return; }`
+    : '';
+  const bootstrap = licensing ? `${marker}\n${licenseMarker}\n${enforcement}` : marker;
   const transformed = source.replace(/<\?php\s*/, (opening) => `${opening}\n${bootstrap}\n`);
   if (transformed === source) throw new Error('WordPress entry file does not begin with PHP.');
   entry.data = Buffer.from(transformed, 'utf8');
@@ -497,6 +504,8 @@ if (!defined('ABSPATH')) { return; }
         $saved = get_option($option, []);
         return is_array($saved) && isset($saved['lease']) && is_array($saved['lease']) && $verify($saved['lease']);
     };
+    if (!isset($GLOBALS['janus_protect_license_checks']) || !is_array($GLOBALS['janus_protect_license_checks'])) { $GLOBALS['janus_protect_license_checks'] = []; }
+    $GLOBALS['janus_protect_license_checks'][(string) $config['projectId']] = $isValid;
     add_filter('janus_protect_license_valid', static function (bool $valid, string $projectId = '') use ($config, $isValid): bool { return $projectId === (string) $config['projectId'] ? $isValid() : $valid; }, 10, 2);
     add_action('admin_post_' . $postAction, static function () use ($config, $option, $page, $request): void {
         if (!current_user_can('manage_options')) { wp_die(esc_html__('Permission denied.', 'janus-protect')); }
