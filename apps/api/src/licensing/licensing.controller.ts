@@ -81,8 +81,7 @@ export class ProjectLicensingController {
     @Req() request: JanusRequest,
   ): Promise<IssuedLicense> {
     const auth = requireAuth(request);
-    requireManager(auth.role);
-    return this.licensing.create(auth.organizationId, auth.userId, projectId, input);
+    return this.licensing.create(auth.organizationId, auth.userId, auth.role, projectId, input);
   }
 
   @Get()

@@ -51,8 +51,7 @@ pnpm dev
 | API and Swagger | `http://localhost:4000/api/docs` |
 | Mailpit         | `http://localhost:8025`          |
 
-The development seed creates `admin@khorami.dev` with password `JanusProtect123!`. It is disabled
-in production and should only be used locally.
+The optional development seed is disabled in production and should only be used locally.
 
 ## Repository layout
 

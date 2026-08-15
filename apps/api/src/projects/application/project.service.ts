@@ -16,7 +16,9 @@ import type {
 } from '@janus/validation';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Queue } from 'bullmq';
+import type { PrismaClient } from '@janus/database';
 import { BUILD_QUEUE, OBJECT_STORAGE } from '../../app.tokens';
+import { PRISMA } from '../../app.tokens';
 import { errors } from '../../common/errors/application-error';
 import {
   PROJECT_REPOSITORY,
@@ -33,12 +35,19 @@ export class ProjectService {
     @Inject(PROJECT_REPOSITORY) private readonly repository: ProjectRepository,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
     @Inject(BUILD_QUEUE) private readonly builds: Queue,
+    @Inject(PRISMA) private readonly prisma: PrismaClient,
   ) {}
 
   async create(
-    auth: { userId: string; organizationId: string },
+    auth: { userId: string; organizationId: string; role: string },
     input: CreateProjectInput,
   ): Promise<Project> {
+    if (
+      auth.role === 'VIEWER' &&
+      (await this.prisma.project.count({ where: { organizationId: auth.organizationId } })) >= 1
+    ) {
+      throw errors.viewerQuota('project');
+    }
     try {
       return mapProject(
         await this.repository.create({
@@ -85,7 +94,7 @@ export class ProjectService {
   }
 
   async archive(
-    auth: { userId: string; organizationId: string },
+    auth: { userId: string; organizationId: string; role: string },
     projectId: string,
   ): Promise<void> {
     if (!(await this.repository.archive(auth.organizationId, projectId, auth.userId))) {
@@ -94,10 +103,18 @@ export class ProjectService {
   }
 
   async uploadSource(
-    auth: { userId: string; organizationId: string },
+    auth: { userId: string; organizationId: string; role: string },
     projectId: string,
     file: { originalname: string; mimetype: string; buffer: Buffer; size: number } | undefined,
   ): Promise<ProjectSource> {
+    if (
+      auth.role === 'VIEWER' &&
+      (await this.prisma.projectSource.count({
+        where: { project: { id: projectId, organizationId: auth.organizationId } },
+      })) >= 1
+    ) {
+      throw errors.viewerQuota('source upload');
+    }
     if (!file) throw errors.archiveInvalid('ARCHIVE_REQUIRED', 'A ZIP file is required.');
     if (!file.originalname.toLowerCase().endsWith('.zip')) {
       throw errors.archiveInvalid('ARCHIVE_EXTENSION_INVALID', 'Only ZIP files are accepted.');
@@ -149,10 +166,18 @@ export class ProjectService {
   }
 
   async createBuild(
-    auth: { userId: string; organizationId: string },
+    auth: { userId: string; organizationId: string; role: string },
     projectId: string,
     input: CreateBuildInput,
   ): Promise<Build> {
+    if (
+      auth.role === 'VIEWER' &&
+      (await this.prisma.build.count({
+        where: { projectId, project: { organizationId: auth.organizationId } },
+      })) >= 1
+    ) {
+      throw errors.viewerQuota('protected build');
+    }
     try {
       const build = await this.repository.createBuild({
         organizationId: auth.organizationId,

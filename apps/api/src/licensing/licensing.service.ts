@@ -30,6 +30,7 @@ export class LicensingService {
   async create(
     organizationId: string,
     actorId: string,
+    role: string,
     projectId: string,
     input: CreateLicenseInput,
   ): Promise<IssuedLicense> {
@@ -38,6 +39,9 @@ export class LicensingService {
       select: { id: true },
     });
     if (!project) throw errors.notFound('Project');
+    if (role === 'VIEWER' && (await this.prisma.license.count({ where: { projectId } })) >= 1) {
+      throw errors.viewerQuota('license');
+    }
     const key = licenseKey();
     const created = await this.prisma.$transaction(async (tx) => {
       const license = await tx.license.create({

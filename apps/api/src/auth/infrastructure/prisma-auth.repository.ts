@@ -76,7 +76,7 @@ export class PrismaAuthRepository implements AuthRepository {
           data: {
             organizationId: organization.id,
             userId: user.id,
-            role: PrismaOrganizationRole.OWNER,
+            role: PrismaOrganizationRole.VIEWER,
           },
         });
         await transaction.emailVerification.create({

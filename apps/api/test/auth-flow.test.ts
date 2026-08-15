@@ -92,7 +92,7 @@ class InMemoryRepository implements AuthRepository {
         id: 'org-1',
         name: input.organizationName,
         slug: input.organizationSlug,
-        role: OrganizationRole.OWNER,
+        role: OrganizationRole.VIEWER,
       },
     };
     this.verification = {

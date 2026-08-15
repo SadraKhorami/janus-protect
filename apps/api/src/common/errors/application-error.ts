@@ -47,6 +47,12 @@ export const errors = {
   archiveInvalid: (code: string, message: string) => new ApplicationError(code, message, 422),
   projectConflict: () =>
     new ApplicationError('PROJECT_CONFLICT', 'A project with this slug already exists.', 409),
+  viewerQuota: (resource: string) =>
+    new ApplicationError(
+      'VIEWER_QUOTA_EXCEEDED',
+      `Viewer accounts may create only one ${resource}.`,
+      409,
+    ),
   sourceRequired: () =>
     new ApplicationError('PROJECT_SOURCE_REQUIRED', 'Upload project source before building.', 409),
   buildConflict: () =>

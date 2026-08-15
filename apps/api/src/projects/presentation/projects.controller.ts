@@ -159,7 +159,12 @@ export class ProjectsController {
 function requireAuth(request: JanusRequest): {
   userId: string;
   organizationId: string;
+  role: string;
 } {
   if (!request.auth) throw new Error('Authentication guard did not populate the request.');
-  return { userId: request.auth.userId, organizationId: request.auth.organizationId };
+  return {
+    userId: request.auth.userId,
+    organizationId: request.auth.organizationId,
+    role: request.auth.role,
+  };
 }
